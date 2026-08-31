@@ -16,26 +16,64 @@ URL_SHEETS = "https://docs.google.com/spreadsheets/d/1YBtjLKdfZ-waj_s51MauE7Zo5x
 def carregar_dados():
   df = pd.read_csv(URL_SHEETS)
 
-  # Limpeza das colunas de texto principais
-  text_cols = [
-      "INDICAÇÃO/LÍDER",
-      "Nome",
-      "Endereço",
-      "Bairro",
-      "Sexo",
-      "Local de Votação",
-      "Contato",
-      "Possui Veículo?",
-      "Tipo de Veículo",
-  ]
-  for col in text_cols:
-    if col in df.columns:
-      df[col] = df[col].astype(str).str.strip().str.upper()
+  # Limpar nomes das colunas originais (remover espaços extras)
+  df.columns = df.columns.astype(str).str.strip()
 
-  # Tratamento de Data de Nascimento e Idade
-  if "Data de Nascimento" in df.columns:
+  # Identificar colunas dinamicamente para evitar erro de digitação
+  def buscar_coluna(termos_busca):
+    for col in df.columns:
+      col_clean = (
+          col.upper()
+          .replace("Ç", "C")
+          .replace("Ã", "A")
+          .replace("Õ", "O")
+          .replace("É", "E")
+          .replace("Ê", "E")
+      )
+      for termo in termos_busca:
+        if termo in col_clean:
+          return col
+    return None
+
+  col_lider = buscar_coluna(["LIDER", "INDICACAO"])
+  col_bairro = buscar_coluna(["BAIRRO"])
+  col_nome = buscar_coluna(["NOME"])
+  col_contato = buscar_coluna(["CONTATO", "TELEFONE", "CELULAR", "ZAP"])
+  col_sexo = buscar_coluna(["SEXO", "GENERO"])
+  col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
+  col_veic_posssui = buscar_coluna(["POSSUI VEICULO", "TEM VEICULO", "VEICULO"])
+  col_veic_tipo = buscar_coluna(["TIPO DE VEICULO", "TIPO VEICULO", "MODELO"])
+
+  # Mapear para nomes padronizados internos
+  renomear = {}
+  if col_lider:
+    renomear[col_lider] = "LIDER_PADRAO"
+  if col_bairro:
+    renomear[col_bairro] = "BAIRRO_PADRAO"
+  if col_nome:
+    renomear[col_nome] = "NOME_PADRAO"
+  if col_contato:
+    renomear[col_contato] = "CONTATO_PADRAO"
+  if col_sexo:
+    renomear[col_sexo] = "SEXO_PADRAO"
+  if col_nasc:
+    renomear[col_nasc] = "NASCIMENTO_PADRAO"
+  if col_veic_posssui:
+    renomear[col_veic_posssui] = "VEICULO_POSSUI_PADRAO"
+  if col_veic_tipo:
+    renomear[col_veic_tipo] = "VEICULO_TIPO_PADRAO"
+
+  df = df.rename(columns=renomear)
+
+  # Tratamento de textos
+  text_cols = [c for c in df.columns if "_PADRAO" in c]
+  for c in text_cols:
+    df[c] = df[c].astype(str).str.strip().str.upper()
+
+  # Tratamento de Idade
+  if "NASCIMENTO_PADRAO" in df.columns:
     df["Data_Nasc_DT"] = pd.to_datetime(
-        df["Data de Nascimento"], format="%d/%m/%Y", errors="coerce"
+        df["NASCIMENTO_PADRAO"], format="%d/%m/%Y", errors="coerce"
     )
     df["Idade"] = 2026 - df["Data_Nasc_DT"].dt.year
 
@@ -63,15 +101,26 @@ st.title("Campanha 2026")
 
 total_cadastros = len(df)
 lideres_ativos = (
-    df["INDICAÇÃO/LÍDER"].nunique() if "INDICAÇÃO/LÍDER" in df.columns else 0
+    df["LIDER_PADRAO"].replace("NAN", np.nan).dropna().nunique()
+    if "LIDER_PADRAO" in df.columns
+    else 0
 )
-bairros_cobertos = df["Bairro"].nunique() if "Bairro" in df.columns else 0
+bairros_cobertos = (
+    df["BAIRRO_PADRAO"].replace("NAN", np.nan).dropna().nunique()
+    if "BAIRRO_PADRAO" in df.columns
+    else 0
+)
 
-if "Possui Veículo?" in df.columns:
-  veiculos_mapeados = df[
-      df["Possui Veículo?"].astype(str).str.contains("SIM|S|TRUE|1", na=False)
-  ].shape[0]
+# Filtro flexível para saber quem tem veículo
+if "VEICULO_POSSUI_PADRAO" in df.columns:
+  df_veiculos_filtro = df[
+      df["VEICULO_POSSUI_PADRAO"].str.contains(
+          "SIM|S|TRUE|1|CARRO|MOTO", na=False
+      )
+  ]
+  veiculos_mapeados = len(df_veiculos_filtro)
 else:
+  df_veiculos_filtro = pd.DataFrame()
   veiculos_mapeados = 0
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
@@ -112,13 +161,17 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
   st.header("1. Desempenho e Produtividade dos Multiplicadores")
 
-  if "INDICAÇÃO/LÍDER" in df.columns and not df.empty:
+  if "LIDER_PADRAO" in df.columns and not df.empty:
+    df_clean_lider = df[
+        ~df["LIDER_PADRAO"].isin(["NAN", "NONE", "", "NÃO INFORMADO"])
+    ]
     df_lideres = (
-        df["INDICAÇÃO/LÍDER"]
+        df_clean_lider["LIDER_PADRAO"]
         .value_counts()
         .reset_index()
-        .rename(columns={"index": "Líder", "count": "Total de Apoiadores"})
+        .rename(columns={"LIDER_PADRAO": "Líder", "count": "Total de Apoiadores"})
     )
+
     df_lideres["% da Base"] = (
         (df_lideres["Total de Apoiadores"] / total_cadastros) * 100
     ).round(1).astype(str) + "%"
@@ -148,6 +201,11 @@ with tab1:
         xaxis={"categoryorder": "total descending"},
     )
     st.plotly_chart(fig_lider, use_container_width=True)
+  else:
+    st.warning(
+        "Não foi encontrada a coluna referente aos Líderes/Indicações na"
+        " planilha."
+    )
 
 # ==========================================
 # ABA 2: LISTAGEM DE APOIADORES POR BAIRRO
@@ -155,42 +213,46 @@ with tab1:
 with tab2:
   st.header("2. Raio-X de Bairros e Apoiadores Inclusos")
 
-  if "Bairro" in df.columns:
-    lista_bairros = ["TODOS OS BAIRROS"] + sorted(
-        [b for b in df["Bairro"].dropna().unique() if b != "NAN"]
+  if "BAIRRO_PADRAO" in df.columns:
+    bairros_validos = sorted(
+        [
+            b
+            for b in df["BAIRRO_PADRAO"].dropna().unique()
+            if b not in ["NAN", "NONE", ""]
+        ]
     )
+    lista_bairros = ["TODOS OS BAIRROS"] + bairros_validos
     bairro_sel = st.selectbox("🔍 Filtrar por Bairro Específico:", lista_bairros)
 
     df_bairros_filtro = df.copy()
     if bairro_sel != "TODOS OS BAIRROS":
       df_bairros_filtro = df_bairros_filtro[
-          df_bairros_filtro["Bairro"] == bairro_sel
+          df_bairros_filtro["BAIRRO_PADRAO"] == bairro_sel
       ]
 
-    bairros_unicos = df_bairros_filtro["Bairro"].dropna().unique()
-
-    # Ordenar bairros pela quantidade decrescente de apoiadores
-    contagem_bairros = df_bairros_filtro["Bairro"].value_counts()
+    contagem_bairros = (
+        df_bairros_filtro["BAIRRO_PADRAO"]
+        .value_counts()
+        .drop(labels=["NAN", ""], errors="ignore")
+    )
     bairros_ordenados = contagem_bairros.index.tolist()
 
-    cols_exibicao = [
-        c
-        for c in [
-            "Contato",
-            "Nome",
-            "INDICAÇÃO/LÍDER",
-            "Endereço",
-            "Local de Votação",
-        ]
-        if c in df.columns
+    # Organizar nomes amigáveis para exibir na tabela
+    mapa_exibicao = {
+        "CONTATO_PADRAO": "Contato",
+        "NOME_PADRAO": "Nome",
+        "LIDER_PADRAO": "Líder",
+        "BAIRRO_PADRAO": "Bairro",
+    }
+    cols_presentes = [
+        c for c in ["CONTATO_PADRAO", "NOME_PADRAO", "LIDER_PADRAO"] if c in df.columns
     ]
 
     for b in bairros_ordenados:
-      sub_df = df_bairros_filtro[df_bairros_filtro["Bairro"] == b]
+      sub_df = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == b]
+      tabela_exibir = sub_df[cols_presentes].rename(columns=mapa_exibicao)
       with st.expander(f"🏠 {b} — ({len(sub_df)} apoiador(es) cadastrado(s))"):
-        st.dataframe(
-            sub_df[cols_exibicao], use_container_width=True, hide_index=True
-        )
+        st.dataframe(tabela_exibir, use_container_width=True, hide_index=True)
 
 # ==========================================
 # ABA 3: PERFIL DEMOGRÁFICO
@@ -198,12 +260,13 @@ with tab2:
 with tab3:
   st.header("3. Perfil Demográfico do Eleitorado")
 
-  if "Sexo" in df.columns and "Idade" in df.columns:
+  if "SEXO_PADRAO" in df.columns and "Idade" in df.columns:
+    df_sexo_clean = df[~df["SEXO_PADRAO"].isin(["NAN", "NONE", ""])]
     st.subheader("Resumo por Gênero e Idade Média")
     resumo_sexo = (
-        df.groupby("Sexo")
+        df_sexo_clean.groupby("SEXO_PADRAO")
         .agg(
-            Quantidade=("Nome", "count"),
+            Quantidade=("SEXO_PADRAO", "count"),
             Idade_Media=("Idade", lambda x: round(x.mean(), 1)),
         )
         .reset_index()
@@ -211,10 +274,12 @@ with tab3:
     resumo_sexo["% da Base"] = (
         (resumo_sexo["Quantidade"] / total_cadastros) * 100
     ).round(1).astype(str) + "%"
-    resumo_sexo["Idade Média"] = resumo_sexo["Idade_Media"].astype(str) + " anos"
-    resumo_sexo = resumo_sexo.rename(columns={"Sexo": "Gênero"}).sort_values(
-        by="Quantidade", ascending=False
+    resumo_sexo["Idade Média"] = (
+        resumo_sexo["Idade_Media"].fillna(0).astype(str) + " anos"
     )
+    resumo_sexo = resumo_sexo.rename(
+        columns={"SEXO_PADRAO": "Gênero"}
+    ).sort_values(by="Quantidade", ascending=False)
 
     st.dataframe(
         resumo_sexo[["Gênero", "Quantidade", "% da Base", "Idade Média"]],
@@ -231,7 +296,6 @@ with tab3:
   if "Faixa_Etaria" in df.columns:
     df_faixa = df["Faixa_Etaria"].value_counts().reset_index()
     df_faixa.columns = ["Faixa Etária", "Quantidade"]
-    # Ordenação decrescente por quantidade
     df_faixa = df_faixa.sort_values(by="Quantidade", ascending=False)
 
     fig_faixa = px.bar(
@@ -257,43 +321,61 @@ with tab3:
 with tab4:
   st.header("🚗 4. Relação de Apoiadores com Veículos Disponíveis")
 
-  if "Possui Veículo?" in df.columns:
-    df_veiculos = df[
-        df["Possui Veículo?"].astype(str).str.contains("SIM|S|TRUE|1", na=False)
-    ].copy()
-
+  if not df_veiculos_filtro.empty:
     c_v1, c_v2 = st.columns(2)
-    c_v1.metric("Total de Veículos Registrados", len(df_veiculos))
+    c_v1.metric("Total de Veículos Registrados", len(df_veiculos_filtro))
     c_v2.metric(
         "Bairros Cobertos com Veículo",
-        df_veiculos["Bairro"].nunique() if "Bairro" in df_veiculos else 0,
+        (
+            df_veiculos_filtro["BAIRRO_PADRAO"].replace("NAN", np.nan).nunique()
+            if "BAIRRO_PADRAO" in df_veiculos_filtro
+            else 0
+        ),
     )
 
     st.markdown("---")
 
-    lista_bairros_v = ["TODOS OS BAIRROS"] + sorted(
-        [b for b in df_veiculos["Bairro"].dropna().unique() if b != "NAN"]
+    bairros_v_validos = sorted(
+        [
+            b
+            for b in df_veiculos_filtro["BAIRRO_PADRAO"].dropna().unique()
+            if b not in ["NAN", "NONE", ""]
+        ]
     )
+    lista_bairros_v = ["TODOS OS BAIRROS"] + bairros_v_validos
     bairro_v_sel = st.selectbox(
         "🔍 Filtrar Veículos por Bairro:", lista_bairros_v
     )
 
+    df_veic_exibir = df_veiculos_filtro.copy()
     if bairro_v_sel != "TODOS OS BAIRROS":
-      df_veiculos = df_veiculos[df_veiculos["Bairro"] == bairro_v_sel]
+      df_veic_exibir = df_veic_exibir[
+          df_veic_exibir["BAIRRO_PADRAO"] == bairro_v_sel
+      ]
+
+    mapa_veic = {
+        "NOME_PADRAO": "Nome",
+        "CONTATO_PADRAO": "Contato",
+        "BAIRRO_PADRAO": "Bairro",
+        "LIDER_PADRAO": "Líder",
+        "VEICULO_TIPO_PADRAO": "Tipo de Veículo",
+    }
 
     cols_veic = [
         c
         for c in [
-            "Nome",
-            "Contato",
-            "Bairro",
-            "Tipo de Veículo",
-            "INDICAÇÃO/LÍDER",
+            "NOME_PADRAO",
+            "CONTATO_PADRAO",
+            "BAIRRO_PADRAO",
+            "LIDER_PADRAO",
+            "VEICULO_TIPO_PADRAO",
         ]
-        if c in df_veiculos.columns
+        if c in df_veic_exibir.columns
     ]
     st.dataframe(
-        df_veiculos[cols_veic], use_container_width=True, hide_index=True
+        df_veic_exibir[cols_veic].rename(columns=mapa_veic),
+        use_container_width=True,
+        hide_index=True,
     )
   else:
-    st.info("A coluna 'Possui Veículo?' não foi encontrada na planilha.")
+    st.info("Nenhum apoiador com veículo registrado ou identificado na planilha.")
