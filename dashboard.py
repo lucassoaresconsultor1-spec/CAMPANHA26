@@ -41,7 +41,6 @@ def carregar_dados():
   col_contato = buscar_coluna(["CONTATO", "TELEFONE", "CELULAR", "ZAP"])
   col_sexo = buscar_coluna(["SEXO", "GENERO"])
   col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
-  # Mapeia especificamente "POSSUI VEICULO" ou "MODEL"
   col_veiculo = buscar_coluna(
       ["POSSUI VEICULO", "MODEL", "VEICULO", "TEM VEICULO"]
   )
@@ -95,13 +94,30 @@ def carregar_dados():
 
 df = carregar_dados()
 
-# Filtering logic for Vehicles: qualquer valor que não seja 'NAO', 'NÃO', 'NONE', 'NAN' ou em branco
+# -------------------------------------------------------------------
+# FILTRO RIGOROSO DE VEÍCULOS (Remove 'NONE', 'NAO', 'NÃO', vazios, etc.)
+# -------------------------------------------------------------------
 if "VEICULO_INFO_PADRAO" in df.columns:
+  valores_invalidos = [
+      "NONE",
+      "NAO",
+      "NÃO",
+      "NAN",
+      "",
+      "NEHUM",
+      "NENHUM",
+      "NAO POSSUI",
+      "NÂO",
+  ]
   df_veiculos_filtro = df[
-      ~df["VEICULO_INFO_PADRAO"].isin(
-          ["NAO", "NÃO", "NONE", "NAN", "", "NEHUM", "NAO POSSUI"]
-      )
+      ~df["VEICULO_INFO_PADRAO"].isin(valores_invalidos)
+      & df["VEICULO_INFO_PADRAO"].notna()
   ].copy()
+
+  # Remove qualquer texto que contenha apenas espaço em branco
+  df_veiculos_filtro = df_veiculos_filtro[
+      df_veiculos_filtro["VEICULO_INFO_PADRAO"].str.strip() != ""
+  ]
   veiculos_mapeados = len(df_veiculos_filtro)
 else:
   df_veiculos_filtro = pd.DataFrame()
