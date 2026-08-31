@@ -16,10 +16,10 @@ URL_SHEETS = "https://docs.google.com/spreadsheets/d/1YBtjLKdfZ-waj_s51MauE7Zo5x
 def carregar_dados():
   df = pd.read_csv(URL_SHEETS)
 
-  # Limpar nomes das colunas originais (remover espaços extras)
+  # Limpar nomes das colunas originais
   df.columns = df.columns.astype(str).str.strip()
 
-  # Identificar colunas dinamicamente para evitar erro de digitação
+  # Busca flexível de colunas
   def buscar_coluna(termos_busca):
     for col in df.columns:
       col_clean = (
@@ -41,10 +41,11 @@ def carregar_dados():
   col_contato = buscar_coluna(["CONTATO", "TELEFONE", "CELULAR", "ZAP"])
   col_sexo = buscar_coluna(["SEXO", "GENERO"])
   col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
-  col_veic_posssui = buscar_coluna(["POSSUI VEICULO", "TEM VEICULO", "VEICULO"])
-  col_veic_tipo = buscar_coluna(["TIPO DE VEICULO", "TIPO VEICULO", "MODELO"])
+  # Mapeia especificamente "POSSUI VEICULO" ou "MODEL"
+  col_veiculo = buscar_coluna(
+      ["POSSUI VEICULO", "MODEL", "VEICULO", "TEM VEICULO"]
+  )
 
-  # Mapear para nomes padronizados internos
   renomear = {}
   if col_lider:
     renomear[col_lider] = "LIDER_PADRAO"
@@ -58,10 +59,8 @@ def carregar_dados():
     renomear[col_sexo] = "SEXO_PADRAO"
   if col_nasc:
     renomear[col_nasc] = "NASCIMENTO_PADRAO"
-  if col_veic_posssui:
-    renomear[col_veic_posssui] = "VEICULO_POSSUI_PADRAO"
-  if col_veic_tipo:
-    renomear[col_veic_tipo] = "VEICULO_TIPO_PADRAO"
+  if col_veiculo:
+    renomear[col_veiculo] = "VEICULO_INFO_PADRAO"
 
   df = df.rename(columns=renomear)
 
@@ -70,7 +69,7 @@ def carregar_dados():
   for c in text_cols:
     df[c] = df[c].astype(str).str.strip().str.upper()
 
-  # Tratamento de Idade
+  # Idade e Faixa Etária
   if "NASCIMENTO_PADRAO" in df.columns:
     df["Data_Nasc_DT"] = pd.to_datetime(
         df["NASCIMENTO_PADRAO"], format="%d/%m/%Y", errors="coerce"
@@ -96,6 +95,18 @@ def carregar_dados():
 
 df = carregar_dados()
 
+# Filtering logic for Vehicles: qualquer valor que não seja 'NAO', 'NÃO', 'NONE', 'NAN' ou em branco
+if "VEICULO_INFO_PADRAO" in df.columns:
+  df_veiculos_filtro = df[
+      ~df["VEICULO_INFO_PADRAO"].isin(
+          ["NAO", "NÃO", "NONE", "NAN", "", "NEHUM", "NAO POSSUI"]
+      )
+  ].copy()
+  veiculos_mapeados = len(df_veiculos_filtro)
+else:
+  df_veiculos_filtro = pd.DataFrame()
+  veiculos_mapeados = 0
+
 # 3. Cabeçalho e Métricas Principais (Topo)
 st.title("Campanha 2026")
 
@@ -110,18 +121,6 @@ bairros_cobertos = (
     if "BAIRRO_PADRAO" in df.columns
     else 0
 )
-
-# Filtro flexível para saber quem tem veículo
-if "VEICULO_POSSUI_PADRAO" in df.columns:
-  df_veiculos_filtro = df[
-      df["VEICULO_POSSUI_PADRAO"].str.contains(
-          "SIM|S|TRUE|1|CARRO|MOTO", na=False
-      )
-  ]
-  veiculos_mapeados = len(df_veiculos_filtro)
-else:
-  df_veiculos_filtro = pd.DataFrame()
-  veiculos_mapeados = 0
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 col_m1.metric(
@@ -175,8 +174,6 @@ with tab1:
     df_lideres["% da Base"] = (
         (df_lideres["Total de Apoiadores"] / total_cadastros) * 100
     ).round(1).astype(str) + "%"
-
-    # Ordenar decrescente
     df_lideres = df_lideres.sort_values(
         by="Total de Apoiadores", ascending=False
     )
@@ -201,11 +198,6 @@ with tab1:
         xaxis={"categoryorder": "total descending"},
     )
     st.plotly_chart(fig_lider, use_container_width=True)
-  else:
-    st.warning(
-        "Não foi encontrada a coluna referente aos Líderes/Indicações na"
-        " planilha."
-    )
 
 # ==========================================
 # ABA 2: LISTAGEM DE APOIADORES POR BAIRRO
@@ -237,7 +229,6 @@ with tab2:
     )
     bairros_ordenados = contagem_bairros.index.tolist()
 
-    # Organizar nomes amigáveis para exibir na tabela
     mapa_exibicao = {
         "CONTATO_PADRAO": "Contato",
         "NOME_PADRAO": "Nome",
@@ -357,8 +348,8 @@ with tab4:
         "NOME_PADRAO": "Nome",
         "CONTATO_PADRAO": "Contato",
         "BAIRRO_PADRAO": "Bairro",
+        "VEICULO_INFO_PADRAO": "Veículo / Modelo",
         "LIDER_PADRAO": "Líder",
-        "VEICULO_TIPO_PADRAO": "Tipo de Veículo",
     }
 
     cols_veic = [
@@ -367,8 +358,8 @@ with tab4:
             "NOME_PADRAO",
             "CONTATO_PADRAO",
             "BAIRRO_PADRAO",
+            "VEICULO_INFO_PADRAO",
             "LIDER_PADRAO",
-            "VEICULO_TIPO_PADRAO",
         ]
         if c in df_veic_exibir.columns
     ]
