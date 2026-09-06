@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from streamlit_option_menu import option_menu
 
 # =====================================================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -35,6 +36,15 @@ MUTED = "#6B7686"
 BORDER = "#E4E8EE"
 
 PLOTLY_FONT = "Manrope, sans-serif"
+
+# Metas de campanha
+META_CAMPANHA = 165
+META_POR_LIDER = 15
+
+# Senha de acesso: de preferência configure em Settings > Secrets no
+# Streamlit Cloud com a chave "senha_acesso" (não fica visível no
+# GitHub). Se não configurar, usa a senha abaixo como padrão.
+SENHA_PADRAO = "BEBETO123"
 
 
 def inject_css():
@@ -184,6 +194,7 @@ def inject_css():
             border-radius: 6px;
         }}
         .rank-bar-fill.top {{ background: {AMBER}; }}
+        .rank-bar-fill.meta-ok {{ background: {GREEN}; }}
         .rank-count {{
             text-align: right;
             min-width: 64px;
@@ -244,23 +255,6 @@ def inject_css():
             padding: 5px 11px;
             border-radius: 8px;
             white-space: nowrap;
-        }}
-
-        /* ---------- Abas ---------- */
-        .stTabs [data-baseweb="tab-list"] {{
-            gap: 4px;
-            border-bottom: 1px solid {BORDER};
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            height: 42px;
-            border-radius: 10px 10px 0 0;
-            padding: 0 16px;
-            font-weight: 700;
-            color: {MUTED};
-        }}
-        .stTabs [aria-selected="true"] {{
-            color: {BLUE} !important;
-            background: #E7F0FA;
         }}
 
         /* Inputs */
@@ -350,6 +344,35 @@ def carregar_dados():
     return df
 
 
+def verificar_senha():
+    """Bloqueia o painel até o usuário digitar a senha correta."""
+    senha_correta = st.secrets.get("senha_acesso", SENHA_PADRAO)
+
+    if st.session_state.get("autenticado"):
+        return
+
+    st.markdown(
+        f"""
+        <div class="hero" style="max-width:420px; margin:60px auto 0 auto; text-align:center;">
+            <div class="eyebrow">ACESSO RESTRITO</div>
+            <h1 style="font-size:1.5rem;">Campanha 2026</h1>
+            <p>Digite a senha da equipe para entrar no painel de campo.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    col_a, col_b, col_c = st.columns([1, 1.4, 1])
+    with col_b:
+        senha_digitada = st.text_input("Senha", type="password", label_visibility="collapsed", placeholder="Digite a senha")
+        if st.button("Entrar", use_container_width=True):
+            if senha_digitada == senha_correta:
+                st.session_state.autenticado = True
+                st.rerun()
+            else:
+                st.error("Senha incorreta.")
+    st.stop()
+
+
 def whatsapp_link(contato: str) -> str:
     """Gera um botão de WhatsApp a partir de um telefone, se válido."""
     if not contato or contato in ("NAN", "NONE", ""):
@@ -395,14 +418,34 @@ bairros_cobertos = (
 # 4. INTERFACE
 # =====================================================================
 inject_css()
+verificar_senha()
 
 agora = datetime.now().strftime("%H:%M")
+pct_meta = min(total_cadastros / META_CAMPANHA * 100, 100) if META_CAMPANHA else 0
+meta_atingida = total_cadastros >= META_CAMPANHA
+cor_meta = GREEN if meta_atingida else AMBER
+texto_meta = (
+    f"Meta batida! 🎉 {total_cadastros} de {META_CAMPANHA} apoiadores"
+    if meta_atingida
+    else f"{total_cadastros} de {META_CAMPANHA} apoiadores · faltam {META_CAMPANHA - total_cadastros}"
+)
+
 st.markdown(
     f"""
     <div class="hero">
         <div class="eyebrow">PAINEL DE CAMPO</div>
         <h1>Campanha 2026</h1>
         <p>Dados sincronizados automaticamente com a planilha de campo · atualizado às {agora}</p>
+        <div style="margin-top:18px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#C7D3E0; margin-bottom:6px;">
+                <span>Meta geral da campanha</span>
+                <span style="font-weight:700; color:white;">{pct_meta:.0f}%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.18); border-radius:8px; height:10px; overflow:hidden;">
+                <div style="width:{pct_meta:.0f}%; background:{cor_meta}; height:100%; border-radius:8px;"></div>
+            </div>
+            <div style="font-size:0.8rem; color:#C7D3E0; margin-top:6px;">{texto_meta}</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -432,17 +475,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "👥 Lideranças",
-    "📍 Bairros",
-    "🎯 Perfil",
-    "🚗 Veículos",
-])
+selected = option_menu(
+    menu_title=None,
+    options=["Lideranças", "Bairros", "Perfil", "Veículos"],
+    icons=["people-fill", "geo-alt-fill", "bullseye", "car-front-fill"],
+    orientation="horizontal",
+    styles={
+        "container": {"padding": "4px", "background-color": CARD, "border": f"1px solid {BORDER}", "border-radius": "12px", "margin-bottom": "18px"},
+        "icon": {"color": MUTED, "font-size": "14px"},
+        "nav-link": {"font-family": "Manrope, sans-serif", "font-weight": "700", "font-size": "0.85rem", "color": MUTED, "text-align": "center", "border-radius": "9px", "padding": "10px 8px"},
+        "nav-link-selected": {"background-color": "#E7F0FA", "color": BLUE},
+    },
+)
 
 # ==========================================
 # ABA 1: LIDERANÇAS
 # ==========================================
-with tab1:
+if selected == "Lideranças":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Ranking de captadores</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subtitle">Quem está trazendo mais apoiadores para a base</div>', unsafe_allow_html=True)
@@ -455,22 +504,31 @@ with tab1:
             .sort_values(by="Total", ascending=False)
             .reset_index(drop=True)
         )
-        max_valor = df_lideres["Total"].max() if not df_lideres.empty else 1
+        lideres_com_meta = int((df_lideres["Total"] >= META_POR_LIDER).sum())
+        st.markdown(
+            f'<div class="section-subtitle" style="margin-bottom:14px;">'
+            f'<span class="chip chip-green">✅ {lideres_com_meta} de {len(df_lideres)} líderes bateram a meta</span> '
+            f'<span class="chip chip-muted">Meta individual: {META_POR_LIDER} apoiadores</span>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
         rows_html = ""
         for i, row in df_lideres.iterrows():
             rank = i + 1
-            pct = (row["Total"] / total_cadastros * 100) if total_cadastros else 0
-            largura = (row["Total"] / max_valor * 100) if max_valor else 0
             is_top = "top" if rank == 1 else ""
+            atingiu = row["Total"] >= META_POR_LIDER
+            largura = min(row["Total"] / META_POR_LIDER * 100, 100) if META_POR_LIDER else 0
+            cor_barra = "meta-ok" if atingiu else ""
+            legenda = "🏆 meta batida" if atingiu else f"faltam {META_POR_LIDER - row['Total']}"
             rows_html += f"""
             <div class="rank-row">
                 <div class="rank-badge {is_top}">{rank}</div>
                 <div class="rank-info">
                     <div class="rank-name">{row['Líder'].title()}</div>
-                    <div class="rank-bar-track"><div class="rank-bar-fill {is_top}" style="width:{largura:.0f}%"></div></div>
+                    <div class="rank-bar-track"><div class="rank-bar-fill {cor_barra}" style="width:{largura:.0f}%"></div></div>
                 </div>
-                <div class="rank-count"><div class="n">{row['Total']}</div><div class="p">{pct:.1f}%</div></div>
+                <div class="rank-count"><div class="n">{row['Total']}/{META_POR_LIDER}</div><div class="p">{legenda}</div></div>
             </div>
             """
         st.markdown(rows_html, unsafe_allow_html=True)
@@ -506,7 +564,7 @@ with tab1:
 # ==========================================
 # ABA 2: BAIRROS
 # ==========================================
-with tab2:
+if selected == "Bairros":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Raio-X de bairros</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subtitle">Apoiadores agrupados por região</div>', unsafe_allow_html=True)
@@ -562,7 +620,7 @@ with tab2:
 # ==========================================
 # ABA 3: PERFIL DEMOGRÁFICO
 # ==========================================
-with tab3:
+if selected == "Perfil":
     if "SEXO_PADRAO" in df.columns and "Idade" in df.columns:
         df_sexo_clean = df[~df["SEXO_PADRAO"].isin(["NAN", "NONE", ""])]
         resumo_sexo = (
@@ -642,7 +700,7 @@ with tab3:
 # ==========================================
 # ABA 4: VEÍCULOS
 # ==========================================
-with tab4:
+if selected == "Veículos":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Apoiadores com veículo</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subtitle">Base de logística para o dia da eleição</div>', unsafe_allow_html=True)
