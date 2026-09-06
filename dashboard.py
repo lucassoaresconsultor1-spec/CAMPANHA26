@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -420,7 +421,7 @@ bairros_cobertos = (
 inject_css()
 verificar_senha()
 
-agora = datetime.now().strftime("%H:%M")
+agora = datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y às %H:%M")
 pct_meta = min(total_cadastros / META_CAMPANHA * 100, 100) if META_CAMPANHA else 0
 meta_atingida = total_cadastros >= META_CAMPANHA
 cor_meta = GREEN if meta_atingida else AMBER
@@ -435,7 +436,7 @@ st.markdown(
     <div class="hero">
         <div class="eyebrow">PAINEL DE CAMPO</div>
         <h1>Campanha 2026</h1>
-        <p>Dados sincronizados automaticamente com a planilha de campo · atualizado às {agora}</p>
+        <p>Dados sincronizados automaticamente com a planilha de campo · atualizado em {agora}</p>
         <div style="margin-top:18px;">
             <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#C7D3E0; margin-bottom:6px;">
                 <span>Meta geral da campanha</span>
