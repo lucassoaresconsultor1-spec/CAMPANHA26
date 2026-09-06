@@ -1,388 +1,698 @@
+import re
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
-# 1. Configuração da Página
+# =====================================================================
+# 1. CONFIGURAÇÃO DA PÁGINA
+# =====================================================================
 st.set_page_config(
-    page_title="Eleitoral - Campanha 2026", page_icon="📊", layout="wide"
+    page_title="Campanha 2026 · Painel de Campo",
+    page_icon="🗳️",
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
-# 2. Carregamento e Tratamento dos Dados
+# =====================================================================
+# 2. IDENTIDADE VISUAL (design tokens)
+# =====================================================================
+# Paleta pensada para um "centro de comando" de campo: base sóbria em
+# azul-marinho (confiança/institucional), cartões neutros e UM único
+# acento (âmbar) reservado para destacar o topo do ranking e alertas.
+NAVY = "#0F2942"
+NAVY_SOFT = "#16385A"
+BLUE = "#1D5FA6"
+AMBER = "#E3A23C"
+GREEN = "#2E9E6D"
+BG = "#F4F6F9"
+CARD = "#FFFFFF"
+TEXT = "#1B2430"
+MUTED = "#6B7686"
+BORDER = "#E4E8EE"
+
+PLOTLY_FONT = "Manrope, sans-serif"
+
+
+def inject_css():
+    st.markdown(
+        f"""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+        html, body, [class*="css"] {{
+            font-family: 'Manrope', sans-serif;
+        }}
+
+        #MainMenu, footer, header {{ visibility: hidden; }}
+
+        .stApp {{
+            background: {BG};
+        }}
+
+        .block-container {{
+            padding-top: 1rem;
+            padding-bottom: 3rem;
+            max-width: 1200px;
+        }}
+
+        /* ---------- Cabeçalho ---------- */
+        .hero {{
+            background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 100%);
+            border-radius: 18px;
+            padding: 28px 28px 24px 28px;
+            color: white;
+            margin-bottom: 22px;
+        }}
+        .hero .eyebrow {{
+            color: {AMBER};
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.2px;
+            margin-bottom: 4px;
+        }}
+        .hero h1 {{
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.15;
+        }}
+        .hero p {{
+            margin-top: 6px;
+            color: #C7D3E0;
+            font-size: 0.92rem;
+        }}
+
+        /* ---------- Grid de indicadores ---------- */
+        .kpi-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 8px;
+        }}
+        @media (max-width: 680px) {{
+            .kpi-grid {{ grid-template-columns: repeat(2, 1fr); }}
+            .hero h1 {{ font-size: 1.5rem; }}
+            .hero {{ padding: 20px 18px; }}
+        }}
+        .kpi-card {{
+            background: {CARD};
+            border: 1px solid {BORDER};
+            border-radius: 14px;
+            padding: 16px 18px;
+        }}
+        .kpi-card .kpi-label {{
+            color: {MUTED};
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .kpi-card .kpi-value {{
+            color: {TEXT};
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin-top: 4px;
+        }}
+
+        /* ---------- Cartão de seção ---------- */
+        .section-card {{
+            background: {CARD};
+            border: 1px solid {BORDER};
+            border-radius: 14px;
+            padding: 20px 22px;
+            margin-bottom: 18px;
+        }}
+        .section-title {{
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: {TEXT};
+            margin-bottom: 2px;
+        }}
+        .section-subtitle {{
+            color: {MUTED};
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }}
+
+        /* ---------- Ranking de líderes ---------- */
+        .rank-row {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid {BORDER};
+        }}
+        .rank-row:last-child {{ border-bottom: none; }}
+        .rank-badge {{
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.78rem;
+            background: #EEF1F5;
+            color: {MUTED};
+        }}
+        .rank-badge.top {{
+            background: {AMBER};
+            color: white;
+        }}
+        .rank-info {{ flex: 1; min-width: 0; }}
+        .rank-name {{
+            font-weight: 700;
+            color: {TEXT};
+            font-size: 0.92rem;
+        }}
+        .rank-bar-track {{
+            background: #EEF1F5;
+            border-radius: 6px;
+            height: 7px;
+            margin-top: 6px;
+            overflow: hidden;
+        }}
+        .rank-bar-fill {{
+            background: {BLUE};
+            height: 100%;
+            border-radius: 6px;
+        }}
+        .rank-bar-fill.top {{ background: {AMBER}; }}
+        .rank-count {{
+            text-align: right;
+            min-width: 64px;
+        }}
+        .rank-count .n {{
+            font-weight: 800;
+            color: {TEXT};
+            font-size: 1rem;
+        }}
+        .rank-count .p {{
+            color: {MUTED};
+            font-size: 0.72rem;
+        }}
+
+        /* ---------- Badges / chips ---------- */
+        .chip {{
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }}
+        .chip-blue {{ background: #E7F0FA; color: {BLUE}; }}
+        .chip-green {{ background: #E5F5EE; color: {GREEN}; }}
+        .chip-amber {{ background: #FCF1DF; color: #A9701C; }}
+        .chip-muted {{ background: #EEF1F5; color: {MUTED}; }}
+
+        /* ---------- Cartão de pessoa (bairro / veículo) ---------- */
+        .person-card {{
+            border: 1px solid {BORDER};
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            background: {CARD};
+        }}
+        .person-top {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }}
+        .person-name {{
+            font-weight: 700;
+            color: {TEXT};
+            font-size: 0.94rem;
+        }}
+        .person-meta {{
+            color: {MUTED};
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }}
+        .wa-link {{
+            text-decoration: none;
+            background: {GREEN};
+            color: white !important;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 5px 11px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }}
+
+        /* ---------- Abas ---------- */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 4px;
+            border-bottom: 1px solid {BORDER};
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            height: 42px;
+            border-radius: 10px 10px 0 0;
+            padding: 0 16px;
+            font-weight: 700;
+            color: {MUTED};
+        }}
+        .stTabs [aria-selected="true"] {{
+            color: {BLUE} !important;
+            background: #E7F0FA;
+        }}
+
+        /* Inputs */
+        .stSelectbox, .stTextInput {{ font-weight: 600; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# =====================================================================
+# 3. CARREGAMENTO E TRATAMENTO DOS DADOS (lógica original preservada)
+# =====================================================================
 URL_SHEETS = "https://docs.google.com/spreadsheets/d/1YBtjLKdfZ-waj_s51MauE7Zo5xYs_TnjjhiT_WkA9Rc/export?format=csv"
 
 
 @st.cache_data(ttl=60)
 def carregar_dados():
-  df = pd.read_csv(URL_SHEETS)
+    df = pd.read_csv(URL_SHEETS)
+    df.columns = df.columns.astype(str).str.strip()
 
-  # Limpar nomes das colunas originais
-  df.columns = df.columns.astype(str).str.strip()
+    def buscar_coluna(termos_busca):
+        for col in df.columns:
+            col_clean = (
+                col.upper()
+                .replace("Ç", "C")
+                .replace("Ã", "A")
+                .replace("Õ", "O")
+                .replace("É", "E")
+                .replace("Ê", "E")
+            )
+            for termo in termos_busca:
+                if termo in col_clean:
+                    return col
+        return None
 
-  # Busca flexível de colunas
-  def buscar_coluna(termos_busca):
-    for col in df.columns:
-      col_clean = (
-          col.upper()
-          .replace("Ç", "C")
-          .replace("Ã", "A")
-          .replace("Õ", "O")
-          .replace("É", "E")
-          .replace("Ê", "E")
-      )
-      for termo in termos_busca:
-        if termo in col_clean:
-          return col
-    return None
+    col_lider = buscar_coluna(["LIDER", "INDICACAO"])
+    col_bairro = buscar_coluna(["BAIRRO"])
+    col_nome = buscar_coluna(["NOME"])
+    col_contato = buscar_coluna(["CONTATO", "TELEFONE", "CELULAR", "ZAP"])
+    col_sexo = buscar_coluna(["SEXO", "GENERO"])
+    col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
+    col_veiculo = buscar_coluna(["POSSUI VEICULO", "MODEL", "VEICULO", "TEM VEICULO"])
 
-  col_lider = buscar_coluna(["LIDER", "INDICACAO"])
-  col_bairro = buscar_coluna(["BAIRRO"])
-  col_nome = buscar_coluna(["NOME"])
-  col_contato = buscar_coluna(["CONTATO", "TELEFONE", "CELULAR", "ZAP"])
-  col_sexo = buscar_coluna(["SEXO", "GENERO"])
-  col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
-  col_veiculo = buscar_coluna(
-      ["POSSUI VEICULO", "MODEL", "VEICULO", "TEM VEICULO"]
-  )
+    renomear = {}
+    if col_lider:
+        renomear[col_lider] = "LIDER_PADRAO"
+    if col_bairro:
+        renomear[col_bairro] = "BAIRRO_PADRAO"
+    if col_nome:
+        renomear[col_nome] = "NOME_PADRAO"
+    if col_contato:
+        renomear[col_contato] = "CONTATO_PADRAO"
+    if col_sexo:
+        renomear[col_sexo] = "SEXO_PADRAO"
+    if col_nasc:
+        renomear[col_nasc] = "NASCIMENTO_PADRAO"
+    if col_veiculo:
+        renomear[col_veiculo] = "VEICULO_INFO_PADRAO"
 
-  renomear = {}
-  if col_lider:
-    renomear[col_lider] = "LIDER_PADRAO"
-  if col_bairro:
-    renomear[col_bairro] = "BAIRRO_PADRAO"
-  if col_nome:
-    renomear[col_nome] = "NOME_PADRAO"
-  if col_contato:
-    renomear[col_contato] = "CONTATO_PADRAO"
-  if col_sexo:
-    renomear[col_sexo] = "SEXO_PADRAO"
-  if col_nasc:
-    renomear[col_nasc] = "NASCIMENTO_PADRAO"
-  if col_veiculo:
-    renomear[col_veiculo] = "VEICULO_INFO_PADRAO"
+    df = df.rename(columns=renomear)
 
-  df = df.rename(columns=renomear)
+    text_cols = [c for c in df.columns if "_PADRAO" in c]
+    for c in text_cols:
+        df[c] = df[c].astype(str).str.strip().str.upper()
 
-  # Tratamento de textos
-  text_cols = [c for c in df.columns if "_PADRAO" in c]
-  for c in text_cols:
-    df[c] = df[c].astype(str).str.strip().str.upper()
+    if "NASCIMENTO_PADRAO" in df.columns:
+        df["Data_Nasc_DT"] = pd.to_datetime(
+            df["NASCIMENTO_PADRAO"], format="%d/%m/%Y", errors="coerce"
+        )
+        df["Idade"] = 2026 - df["Data_Nasc_DT"].dt.year
 
-  # Idade e Faixa Etária
-  if "NASCIMENTO_PADRAO" in df.columns:
-    df["Data_Nasc_DT"] = pd.to_datetime(
-        df["NASCIMENTO_PADRAO"], format="%d/%m/%Y", errors="coerce"
-    )
-    df["Idade"] = 2026 - df["Data_Nasc_DT"].dt.year
+        def classificar_faixa(idade):
+            if pd.isna(idade):
+                return "Não informado"
+            elif idade < 25:
+                return "18-24 anos"
+            elif idade < 40:
+                return "25-39 anos"
+            elif idade < 60:
+                return "40-59 anos"
+            else:
+                return "60+ anos"
 
-    def classificar_faixa(idade):
-      if pd.isna(idade):
-        return "Não Informado"
-      elif idade < 25:
-        return "18-24 anos"
-      elif idade < 40:
-        return "25-39 anos"
-      elif idade < 60:
-        return "40-59 anos"
-      else:
-        return "60+ anos"
+        df["Faixa_Etaria"] = df["Idade"].apply(classificar_faixa)
 
-    df["Faixa_Etaria"] = df["Idade"].apply(classificar_faixa)
+    return df
 
-  return df
+
+def whatsapp_link(contato: str) -> str:
+    """Gera um botão de WhatsApp a partir de um telefone, se válido."""
+    if not contato or contato in ("NAN", "NONE", ""):
+        return ""
+    digitos = re.sub(r"\D", "", contato)
+    if len(digitos) < 10:
+        return contato
+    if not digitos.startswith("55"):
+        digitos = "55" + digitos
+    return f'<a class="wa-link" href="https://wa.me/{digitos}" target="_blank">💬 {contato}</a>'
 
 
 df = carregar_dados()
 
-# -------------------------------------------------------------------
-# FILTRO RIGOROSO DE VEÍCULOS (Remove 'NONE', 'NAO', 'NÃO', vazios, etc.)
-# -------------------------------------------------------------------
+# ---------- Filtro de veículos válidos ----------
 if "VEICULO_INFO_PADRAO" in df.columns:
-  valores_invalidos = [
-      "NONE",
-      "NAO",
-      "NÃO",
-      "NAN",
-      "",
-      "NEHUM",
-      "NENHUM",
-      "NAO POSSUI",
-      "NÂO",
-  ]
-  df_veiculos_filtro = df[
-      ~df["VEICULO_INFO_PADRAO"].isin(valores_invalidos)
-      & df["VEICULO_INFO_PADRAO"].notna()
-  ].copy()
-
-  # Remove qualquer texto que contenha apenas espaço em branco
-  df_veiculos_filtro = df_veiculos_filtro[
-      df_veiculos_filtro["VEICULO_INFO_PADRAO"].str.strip() != ""
-  ]
-  veiculos_mapeados = len(df_veiculos_filtro)
+    valores_invalidos = [
+        "NONE", "NAO", "NÃO", "NAN", "", "NEHUM", "NENHUM", "NAO POSSUI", "NÂO",
+    ]
+    df_veiculos_filtro = df[
+        ~df["VEICULO_INFO_PADRAO"].isin(valores_invalidos)
+        & df["VEICULO_INFO_PADRAO"].notna()
+    ].copy()
+    df_veiculos_filtro = df_veiculos_filtro[
+        df_veiculos_filtro["VEICULO_INFO_PADRAO"].str.strip() != ""
+    ]
+    veiculos_mapeados = len(df_veiculos_filtro)
 else:
-  df_veiculos_filtro = pd.DataFrame()
-  veiculos_mapeados = 0
-
-# 3. Cabeçalho e Métricas Principais (Topo)
-st.title("Campanha 2026")
+    df_veiculos_filtro = pd.DataFrame()
+    veiculos_mapeados = 0
 
 total_cadastros = len(df)
 lideres_ativos = (
     df["LIDER_PADRAO"].replace("NAN", np.nan).dropna().nunique()
-    if "LIDER_PADRAO" in df.columns
-    else 0
+    if "LIDER_PADRAO" in df.columns else 0
 )
 bairros_cobertos = (
     df["BAIRRO_PADRAO"].replace("NAN", np.nan).dropna().nunique()
-    if "BAIRRO_PADRAO" in df.columns
-    else 0
+    if "BAIRRO_PADRAO" in df.columns else 0
 )
 
-col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-col_m1.metric(
-    "Total de Cadastros Válidos",
-    total_cadastros,
-    help="Quantidade total de apoiadores registrados na base.",
-)
-col_m2.metric(
-    "Líderes Ativos",
-    lideres_ativos,
-    help="Número de lideranças com pelo menos uma indicação.",
-)
-col_m3.metric(
-    "Bairros Cobertos",
-    bairros_cobertos,
-    help="Total de bairros com presença registrada.",
-)
-col_m4.metric(
-    "Veículos Mapeados (Dia E)",
-    veiculos_mapeados,
-    help="Total de veículos cadastrados para a logística de dia de eleição.",
+# =====================================================================
+# 4. INTERFACE
+# =====================================================================
+inject_css()
+
+agora = datetime.now().strftime("%H:%M")
+st.markdown(
+    f"""
+    <div class="hero">
+        <div class="eyebrow">PAINEL DE CAMPO</div>
+        <h1>Campanha 2026</h1>
+        <p>Dados sincronizados automaticamente com a planilha de campo · atualizado às {agora}</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-st.markdown("---")
+st.markdown(
+    f"""
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">👥 Cadastros válidos</div>
+            <div class="kpi-value">{total_cadastros}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">⭐ Líderes ativos</div>
+            <div class="kpi-value">{lideres_ativos}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">📍 Bairros cobertos</div>
+            <div class="kpi-value">{bairros_cobertos}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">🚗 Veículos no dia E</div>
+            <div class="kpi-value">{veiculos_mapeados}</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# 4. Navegação por Abas
 tab1, tab2, tab3, tab4 = st.tabs([
-    "👥 1. Gestão de Lideranças",
-    "📍 2. Listagem de Apoiadores por Bairro",
-    "🎯 3. Perfil Demográfico",
-    "🚗 4. Veículos Disponíveis",
+    "👥 Lideranças",
+    "📍 Bairros",
+    "🎯 Perfil",
+    "🚗 Veículos",
 ])
 
 # ==========================================
-# ABA 1: GESTÃO DE LIDERANÇAS
+# ABA 1: LIDERANÇAS
 # ==========================================
 with tab1:
-  st.header("1. Desempenho e Produtividade dos Multiplicadores")
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Ranking de captadores</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Quem está trazendo mais apoiadores para a base</div>', unsafe_allow_html=True)
 
-  if "LIDER_PADRAO" in df.columns and not df.empty:
-    df_clean_lider = df[
-        ~df["LIDER_PADRAO"].isin(["NAN", "NONE", "", "NÃO INFORMADO"])
-    ]
-    df_lideres = (
-        df_clean_lider["LIDER_PADRAO"]
-        .value_counts()
-        .reset_index()
-        .rename(columns={"LIDER_PADRAO": "Líder", "count": "Total de Apoiadores"})
-    )
+    if "LIDER_PADRAO" in df.columns and not df.empty:
+        df_clean_lider = df[~df["LIDER_PADRAO"].isin(["NAN", "NONE", "", "NÃO INFORMADO"])]
+        df_lideres = (
+            df_clean_lider["LIDER_PADRAO"].value_counts().reset_index()
+            .rename(columns={"LIDER_PADRAO": "Líder", "count": "Total"})
+            .sort_values(by="Total", ascending=False)
+            .reset_index(drop=True)
+        )
+        max_valor = df_lideres["Total"].max() if not df_lideres.empty else 1
 
-    df_lideres["% da Base"] = (
-        (df_lideres["Total de Apoiadores"] / total_cadastros) * 100
-    ).round(1).astype(str) + "%"
-    df_lideres = df_lideres.sort_values(
-        by="Total de Apoiadores", ascending=False
-    )
+        rows_html = ""
+        for i, row in df_lideres.iterrows():
+            rank = i + 1
+            pct = (row["Total"] / total_cadastros * 100) if total_cadastros else 0
+            largura = (row["Total"] / max_valor * 100) if max_valor else 0
+            is_top = "top" if rank == 1 else ""
+            rows_html += f"""
+            <div class="rank-row">
+                <div class="rank-badge {is_top}">{rank}</div>
+                <div class="rank-info">
+                    <div class="rank-name">{row['Líder'].title()}</div>
+                    <div class="rank-bar-track"><div class="rank-bar-fill {is_top}" style="width:{largura:.0f}%"></div></div>
+                </div>
+                <div class="rank-count"><div class="n">{row['Total']}</div><div class="p">{pct:.1f}%</div></div>
+            </div>
+            """
+        st.markdown(rows_html, unsafe_allow_html=True)
+    else:
+        st.info("Nenhum dado de liderança encontrado na planilha.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.subheader("Ranking de Captadores")
-    st.dataframe(df_lideres, use_container_width=True, hide_index=True)
+    if "LIDER_PADRAO" in df.columns and not df_lideres.empty:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Volume por líder</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-subtitle">Comparativo visual entre captadores</div>', unsafe_allow_html=True)
 
-    st.subheader("Volume por Líder")
-    fig_lider = px.bar(
-        df_lideres,
-        x="Líder",
-        y="Total de Apoiadores",
-        text="Total de Apoiadores",
-        color_discrete_sequence=["#0066CC"],
-    )
-    fig_lider.update_traces(textposition="outside")
-    fig_lider.update_layout(
-        xaxis_title="",
-        yaxis_title="Total de Apoiadores",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        xaxis={"categoryorder": "total descending"},
-    )
-    st.plotly_chart(fig_lider, use_container_width=True)
+        fig_lider = px.bar(
+            df_lideres, x="Total", y="Líder", orientation="h", text="Total",
+        )
+        fig_lider.update_traces(
+            marker_color=[AMBER if i == 0 else BLUE for i in range(len(df_lideres))],
+            textposition="outside",
+            marker_line_width=0,
+        )
+        fig_lider.update_layout(
+            font_family=PLOTLY_FONT, font_color=TEXT,
+            xaxis_title="", yaxis_title="",
+            yaxis={"categoryorder": "total ascending"},
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=10, t=10, b=10),
+            height=max(280, 42 * len(df_lideres)),
+        )
+        fig_lider.update_xaxes(showgrid=True, gridcolor=BORDER)
+        st.plotly_chart(fig_lider, use_container_width=True, config={"displayModeBar": False})
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 2: LISTAGEM DE APOIADORES POR BAIRRO
+# ABA 2: BAIRROS
 # ==========================================
 with tab2:
-  st.header("2. Raio-X de Bairros e Apoiadores Inclusos")
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Raio-X de bairros</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Apoiadores agrupados por região</div>', unsafe_allow_html=True)
 
-  if "BAIRRO_PADRAO" in df.columns:
-    bairros_validos = sorted(
-        [
-            b
-            for b in df["BAIRRO_PADRAO"].dropna().unique()
-            if b not in ["NAN", "NONE", ""]
-        ]
-    )
-    lista_bairros = ["TODOS OS BAIRROS"] + bairros_validos
-    bairro_sel = st.selectbox("🔍 Filtrar por Bairro Específico:", lista_bairros)
+    if "BAIRRO_PADRAO" in df.columns:
+        bairros_validos = sorted(
+            [b for b in df["BAIRRO_PADRAO"].dropna().unique() if b not in ["NAN", "NONE", ""]]
+        )
+        col_f1, col_f2 = st.columns([2, 2])
+        with col_f1:
+            bairro_sel = st.selectbox("Filtrar por bairro", ["Todos os bairros"] + bairros_validos)
+        with col_f2:
+            busca_nome = st.text_input("Buscar por nome", placeholder="Digite um nome…")
 
-    df_bairros_filtro = df.copy()
-    if bairro_sel != "TODOS OS BAIRROS":
-      df_bairros_filtro = df_bairros_filtro[
-          df_bairros_filtro["BAIRRO_PADRAO"] == bairro_sel
-      ]
+        df_bairros_filtro = df.copy()
+        if bairro_sel != "Todos os bairros":
+            df_bairros_filtro = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == bairro_sel]
+        if busca_nome and "NOME_PADRAO" in df_bairros_filtro.columns:
+            df_bairros_filtro = df_bairros_filtro[
+                df_bairros_filtro["NOME_PADRAO"].str.contains(busca_nome.upper(), na=False)
+            ]
 
-    contagem_bairros = (
-        df_bairros_filtro["BAIRRO_PADRAO"]
-        .value_counts()
-        .drop(labels=["NAN", ""], errors="ignore")
-    )
-    bairros_ordenados = contagem_bairros.index.tolist()
+        contagem_bairros = (
+            df_bairros_filtro["BAIRRO_PADRAO"].value_counts().drop(labels=["NAN", ""], errors="ignore")
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 
-    mapa_exibicao = {
-        "CONTATO_PADRAO": "Contato",
-        "NOME_PADRAO": "Nome",
-        "LIDER_PADRAO": "Líder",
-        "BAIRRO_PADRAO": "Bairro",
-    }
-    cols_presentes = [
-        c for c in ["CONTATO_PADRAO", "NOME_PADRAO", "LIDER_PADRAO"] if c in df.columns
-    ]
-
-    for b in bairros_ordenados:
-      sub_df = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == b]
-      tabela_exibir = sub_df[cols_presentes].rename(columns=mapa_exibicao)
-      with st.expander(f"🏠 {b} — ({len(sub_df)} apoiador(es) cadastrado(s))"):
-        st.dataframe(tabela_exibir, use_container_width=True, hide_index=True)
+        for b in contagem_bairros.index.tolist():
+            sub_df = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == b]
+            with st.expander(f"🏠  {b.title()} · {len(sub_df)} apoiador(es)"):
+                for _, r in sub_df.iterrows():
+                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
+                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    wa = whatsapp_link(contato)
+                    lider_chip = f'<span class="chip chip-blue">Líder: {lider.title()}</span>' if lider and lider not in ("NAN", "NONE", "") else ""
+                    st.markdown(
+                        f"""
+                        <div class="person-card">
+                            <div class="person-top">
+                                <div>
+                                    <div class="person-name">{nome}</div>
+                                    <div class="person-meta">{lider_chip}</div>
+                                </div>
+                                {wa}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
 # ABA 3: PERFIL DEMOGRÁFICO
 # ==========================================
 with tab3:
-  st.header("3. Perfil Demográfico do Eleitorado")
-
-  if "SEXO_PADRAO" in df.columns and "Idade" in df.columns:
-    df_sexo_clean = df[~df["SEXO_PADRAO"].isin(["NAN", "NONE", ""])]
-    st.subheader("Resumo por Gênero e Idade Média")
-    resumo_sexo = (
-        df_sexo_clean.groupby("SEXO_PADRAO")
-        .agg(
-            Quantidade=("SEXO_PADRAO", "count"),
-            Idade_Media=("Idade", lambda x: round(x.mean(), 1)),
+    if "SEXO_PADRAO" in df.columns and "Idade" in df.columns:
+        df_sexo_clean = df[~df["SEXO_PADRAO"].isin(["NAN", "NONE", ""])]
+        resumo_sexo = (
+            df_sexo_clean.groupby("SEXO_PADRAO")
+            .agg(Quantidade=("SEXO_PADRAO", "count"), Idade_Media=("Idade", lambda x: round(x.mean(), 1)))
+            .reset_index()
+            .sort_values(by="Quantidade", ascending=False)
         )
-        .reset_index()
-    )
-    resumo_sexo["% da Base"] = (
-        (resumo_sexo["Quantidade"] / total_cadastros) * 100
-    ).round(1).astype(str) + "%"
-    resumo_sexo["Idade Média"] = (
-        resumo_sexo["Idade_Media"].fillna(0).astype(str) + " anos"
-    )
-    resumo_sexo = resumo_sexo.rename(
-        columns={"SEXO_PADRAO": "Gênero"}
-    ).sort_values(by="Quantidade", ascending=False)
 
-    st.dataframe(
-        resumo_sexo[["Gênero", "Quantidade", "% da Base", "Idade Média"]],
-        use_container_width=True,
-        hide_index=True,
-    )
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Perfil do eleitorado</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-subtitle">Distribuição por gênero e idade média</div>', unsafe_allow_html=True)
 
-    media_geral = df["Idade"].mean()
-    if not np.isnan(media_geral):
-      st.subheader("Média de Idade Geral da Base")
-      st.markdown(f"### **{media_geral:.1f} anos**")
+        total_sexo = resumo_sexo["Quantidade"].sum()
+        cols = st.columns(len(resumo_sexo)) if len(resumo_sexo) > 0 else []
+        cores_genero = {0: BLUE, 1: GREEN}
+        for i, (_, r) in enumerate(resumo_sexo.iterrows()):
+            pct = r["Quantidade"] / total_sexo * 100 if total_sexo else 0
+            with cols[i]:
+                st.markdown(
+                    f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">{r['SEXO_PADRAO'].title()}</div>
+                        <div class="kpi-value">{r['Quantidade']}</div>
+                        <div class="section-subtitle" style="margin-bottom:0;">{pct:.1f}% da base · média {r['Idade_Media']} anos</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-  st.subheader("Distribuição por Faixa Etária")
-  if "Faixa_Etaria" in df.columns:
-    df_faixa = df["Faixa_Etaria"].value_counts().reset_index()
-    df_faixa.columns = ["Faixa Etária", "Quantidade"]
-    df_faixa = df_faixa.sort_values(by="Quantidade", ascending=False)
+        # Barra de proporção única (visual de gênero)
+        segments = ""
+        for i, (_, r) in enumerate(resumo_sexo.iterrows()):
+            largura = r["Quantidade"] / total_sexo * 100 if total_sexo else 0
+            cor = cores_genero.get(i, MUTED)
+            segments += f'<div style="width:{largura:.1f}%; background:{cor};"></div>'
+        st.markdown(
+            f"""
+            <div style="display:flex; height:14px; border-radius:8px; overflow:hidden; margin-top:16px;">
+                {segments}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    fig_faixa = px.bar(
-        df_faixa,
-        x="Faixa Etária",
-        y="Quantidade",
-        text="Quantidade",
-        color_discrete_sequence=["#0066CC"],
-    )
-    fig_faixa.update_traces(textposition="outside")
-    fig_faixa.update_layout(
-        xaxis_title="",
-        yaxis_title="Quantidade",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        xaxis={"categoryorder": "total descending"},
-    )
-    st.plotly_chart(fig_faixa, use_container_width=True)
+        media_geral = df["Idade"].mean()
+        if not np.isnan(media_geral):
+            st.markdown(
+                f'<div class="section-subtitle" style="margin-top:10px;">Idade média geral da base: <b style="color:{TEXT}">{media_geral:.1f} anos</b></div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if "Faixa_Etaria" in df.columns:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Distribuição por faixa etária</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-subtitle">Onde está concentrado o eleitorado cadastrado</div>', unsafe_allow_html=True)
+
+        df_faixa = df["Faixa_Etaria"].value_counts().reset_index()
+        df_faixa.columns = ["Faixa Etária", "Quantidade"]
+        ordem = ["18-24 anos", "25-39 anos", "40-59 anos", "60+ anos", "Não informado"]
+        df_faixa["ordem"] = df_faixa["Faixa Etária"].apply(lambda x: ordem.index(x) if x in ordem else 99)
+        df_faixa = df_faixa.sort_values("ordem")
+
+        fig_faixa = px.bar(df_faixa, x="Faixa Etária", y="Quantidade", text="Quantidade")
+        fig_faixa.update_traces(marker_color=BLUE, textposition="outside", marker_line_width=0)
+        fig_faixa.update_layout(
+            font_family=PLOTLY_FONT, font_color=TEXT,
+            xaxis_title="", yaxis_title="",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=0, t=10, b=10), height=320,
+        )
+        fig_faixa.update_yaxes(showgrid=True, gridcolor=BORDER)
+        st.plotly_chart(fig_faixa, use_container_width=True, config={"displayModeBar": False})
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 4: VEÍCULOS DISPONÍVEIS
+# ABA 4: VEÍCULOS
 # ==========================================
 with tab4:
-  st.header("🚗 4. Relação de Apoiadores com Veículos Disponíveis")
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Apoiadores com veículo</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Base de logística para o dia da eleição</div>', unsafe_allow_html=True)
 
-  if not df_veiculos_filtro.empty:
-    c_v1, c_v2 = st.columns(2)
-    c_v1.metric("Total de Veículos Registrados", len(df_veiculos_filtro))
-    c_v2.metric(
-        "Bairros Cobertos com Veículo",
-        (
+    if not df_veiculos_filtro.empty:
+        bairros_com_veic = (
             df_veiculos_filtro["BAIRRO_PADRAO"].replace("NAN", np.nan).nunique()
-            if "BAIRRO_PADRAO" in df_veiculos_filtro
-            else 0
-        ),
-    )
+            if "BAIRRO_PADRAO" in df_veiculos_filtro else 0
+        )
+        c1, c2 = st.columns(2)
+        c1.markdown(f'<div class="kpi-card"><div class="kpi-label">🚗 Veículos registrados</div><div class="kpi-value">{len(df_veiculos_filtro)}</div></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="kpi-card"><div class="kpi-label">📍 Bairros cobertos</div><div class="kpi-value">{bairros_com_veic}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-    bairros_v_validos = sorted(
-        [
-            b
-            for b in df_veiculos_filtro["BAIRRO_PADRAO"].dropna().unique()
-            if b not in ["NAN", "NONE", ""]
-        ]
-    )
-    lista_bairros_v = ["TODOS OS BAIRROS"] + bairros_v_validos
-    bairro_v_sel = st.selectbox(
-        "🔍 Filtrar Veículos por Bairro:", lista_bairros_v
-    )
+        bairros_v_validos = sorted(
+            [b for b in df_veiculos_filtro["BAIRRO_PADRAO"].dropna().unique() if b not in ["NAN", "NONE", ""]]
+        )
+        bairro_v_sel = st.selectbox("Filtrar veículos por bairro", ["Todos os bairros"] + bairros_v_validos)
 
-    df_veic_exibir = df_veiculos_filtro.copy()
-    if bairro_v_sel != "TODOS OS BAIRROS":
-      df_veic_exibir = df_veic_exibir[
-          df_veic_exibir["BAIRRO_PADRAO"] == bairro_v_sel
-      ]
+        df_veic_exibir = df_veiculos_filtro.copy()
+        if bairro_v_sel != "Todos os bairros":
+            df_veic_exibir = df_veic_exibir[df_veic_exibir["BAIRRO_PADRAO"] == bairro_v_sel]
 
-    mapa_veic = {
-        "NOME_PADRAO": "Nome",
-        "CONTATO_PADRAO": "Contato",
-        "BAIRRO_PADRAO": "Bairro",
-        "VEICULO_INFO_PADRAO": "Veículo / Modelo",
-        "LIDER_PADRAO": "Líder",
-    }
-
-    cols_veic = [
-        c
-        for c in [
-            "NOME_PADRAO",
-            "CONTATO_PADRAO",
-            "BAIRRO_PADRAO",
-            "VEICULO_INFO_PADRAO",
-            "LIDER_PADRAO",
-        ]
-        if c in df_veic_exibir.columns
-    ]
-    st.dataframe(
-        df_veic_exibir[cols_veic].rename(columns=mapa_veic),
-        use_container_width=True,
-        hide_index=True,
-    )
-  else:
-    st.info("Nenhum apoiador com veículo registrado ou identificado na planilha.")
+        st.markdown("<br>", unsafe_allow_html=True)
+        for _, r in df_veic_exibir.iterrows():
+            nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
+            bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
+            veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
+            lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+            contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+            wa = whatsapp_link(contato)
+            st.markdown(
+                f"""
+                <div class="person-card">
+                    <div class="person-top">
+                        <div>
+                            <div class="person-name">{nome}</div>
+                            <div class="person-meta">🚙 {veiculo.title()}</div>
+                            <div class="person-meta">
+                                <span class="chip chip-muted">{bairro.title()}</span>
+                                <span class="chip chip-blue">Líder: {lider.title()}</span>
+                            </div>
+                        </div>
+                        {wa}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    else:
+        st.info("Nenhum apoiador com veículo registrado ou identificado na planilha.")
+    st.markdown('</div>', unsafe_allow_html=True)
