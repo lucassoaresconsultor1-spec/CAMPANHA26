@@ -871,13 +871,16 @@ if selected == "Apoio Extra":
                     bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
                     lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
                     wa = whatsapp_link(contato)
+                    linha_veiculo = f'<div class="person-meta">🚙 {veiculo.title()}</div>' if veiculo and veiculo not in ("NAN", "NONE", "") else ""
                     st.markdown(
                         f"""
                         <div class="person-card">
                             <div class="person-top">
                                 <div>
                                     <div class="person-name">{nome}</div>
+                                    {linha_veiculo}
                                     <div class="person-meta">
                                         <span class="chip chip-muted">{bairro.title()}</span>
                                         <span class="chip chip-blue">Líder: {lider.title()}</span>
@@ -912,13 +915,16 @@ if selected == "Apoio Extra":
                     bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
                     lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
                     wa = whatsapp_link(contato)
+                    linha_veiculo = f'<div class="person-meta">🚙 {veiculo.title()}</div>' if veiculo and veiculo not in ("NAN", "NONE", "") else ""
                     st.markdown(
                         f"""
                         <div class="person-card">
                             <div class="person-top">
                                 <div>
                                     <div class="person-name">{nome}</div>
+                                    {linha_veiculo}
                                     <div class="person-meta">
                                         <span class="chip chip-muted">{bairro.title()}</span>
                                         <span class="chip chip-blue">Líder: {lider.title()}</span>
