@@ -357,6 +357,8 @@ def carregar_dados():
     col_sexo = buscar_coluna(["SEXO", "GENERO"])
     col_nasc = buscar_coluna(["NASCIMENTO", "DATA_NASC"])
     col_veiculo = buscar_coluna(["POSSUI VEICULO", "MODEL", "VEICULO", "TEM VEICULO"])
+    col_adesivo = buscar_coluna(["ADESIVO"])
+    col_trabalho_dia = buscar_coluna(["TRABALHO DIA", "DIA DA ELEICAO", "DIA E", "MESARIO", "TRABALHO ELEICAO"])
 
     renomear = {}
     if col_lider:
@@ -373,6 +375,10 @@ def carregar_dados():
         renomear[col_nasc] = "NASCIMENTO_PADRAO"
     if col_veiculo:
         renomear[col_veiculo] = "VEICULO_INFO_PADRAO"
+    if col_adesivo:
+        renomear[col_adesivo] = "ADESIVO_PADRAO"
+    if col_trabalho_dia:
+        renomear[col_trabalho_dia] = "TRABALHO_DIA_PADRAO"
 
     df = df.rename(columns=renomear)
 
@@ -463,6 +469,19 @@ else:
     df_veiculos_filtro = pd.DataFrame()
     veiculos_mapeados = 0
 
+# ---------- Filtro de Apoio Extra: Adesivo e Trabalho no Dia ----------
+VALORES_SIM = ["SIM", "S", "YES", "X", "TRUE", "1"]
+
+if "ADESIVO_PADRAO" in df.columns:
+    df_adesivo_filtro = df[df["ADESIVO_PADRAO"].isin(VALORES_SIM)].copy()
+else:
+    df_adesivo_filtro = pd.DataFrame()
+
+if "TRABALHO_DIA_PADRAO" in df.columns:
+    df_trabalho_filtro = df[df["TRABALHO_DIA_PADRAO"].isin(VALORES_SIM)].copy()
+else:
+    df_trabalho_filtro = pd.DataFrame()
+
 total_cadastros = len(df)
 lideres_ativos = (
     df["LIDER_PADRAO"].replace("NAN", np.nan).dropna().nunique()
@@ -536,8 +555,8 @@ st.markdown(
 
 selected = option_menu(
     menu_title=None,
-    options=["Lideranças", "Bairros", "Perfil", "Veículos"],
-    icons=["people-fill", "geo-alt-fill", "bullseye", "car-front-fill"],
+    options=["Lideranças", "Bairros", "Perfil", "Veículos", "Apoio Extra"],
+    icons=["people-fill", "geo-alt-fill", "bullseye", "car-front-fill", "star-fill"],
     orientation="horizontal",
     styles={
         "container": {"padding": "4px", "background-color": CARD, "border": f"1px solid {BORDER}", "border-radius": "12px", "margin-bottom": "18px"},
@@ -812,4 +831,103 @@ if selected == "Veículos":
             )
     else:
         st.info("Nenhum apoiador com veículo registrado ou identificado na planilha.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==========================================
+# ABA 5: APOIO EXTRA (ADESIVO / TRABALHO NO DIA)
+# ==========================================
+if selected == "Apoio Extra":
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Apoio extra da campanha</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Adesivo veicular e trabalho no dia da eleição</div>', unsafe_allow_html=True)
+
+    subgrupo = st.radio(
+        "Selecione o grupo",
+        ["🎨 Adesivo Veicular", "🗳️ Trabalho no Dia da Eleição"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if subgrupo == "🎨 Adesivo Veicular":
+        if "ADESIVO_PADRAO" not in df.columns:
+            st.warning(
+                "Ainda não encontrei uma coluna de adesivo veicular na planilha. "
+                "Crie uma coluna chamada, por exemplo, **ADESIVO_VEICULAR** com "
+                "respostas **Sim/Não** e o painel detecta automaticamente."
+            )
+        else:
+            st.markdown(
+                f'<div class="kpi-card" style="max-width:260px;"><div class="kpi-label">🎨 Com adesivo instalado</div>'
+                f'<div class="kpi-value">{len(df_adesivo_filtro)}</div></div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            if df_adesivo_filtro.empty:
+                st.info("Nenhum apoiador com adesivo veicular registrado ainda.")
+            else:
+                for _, r in df_adesivo_filtro.iterrows():
+                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
+                    bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
+                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    wa = whatsapp_link(contato)
+                    st.markdown(
+                        f"""
+                        <div class="person-card">
+                            <div class="person-top">
+                                <div>
+                                    <div class="person-name">{nome}</div>
+                                    <div class="person-meta">
+                                        <span class="chip chip-muted">{bairro.title()}</span>
+                                        <span class="chip chip-blue">Líder: {lider.title()}</span>
+                                    </div>
+                                </div>
+                                {wa}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+    else:  # Trabalho no Dia da Eleição
+        if "TRABALHO_DIA_PADRAO" not in df.columns:
+            st.warning(
+                "Ainda não encontrei uma coluna de trabalho no dia da eleição na planilha. "
+                "Crie uma coluna chamada, por exemplo, **TRABALHO_DIA_ELEICAO** com "
+                "respostas **Sim/Não** e o painel detecta automaticamente."
+            )
+        else:
+            st.markdown(
+                f'<div class="kpi-card" style="max-width:260px;"><div class="kpi-label">🗳️ Confirmados para o dia E</div>'
+                f'<div class="kpi-value">{len(df_trabalho_filtro)}</div></div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            if df_trabalho_filtro.empty:
+                st.info("Nenhum apoiador confirmado para trabalhar no dia da eleição ainda.")
+            else:
+                for _, r in df_trabalho_filtro.iterrows():
+                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
+                    bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
+                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    wa = whatsapp_link(contato)
+                    st.markdown(
+                        f"""
+                        <div class="person-card">
+                            <div class="person-top">
+                                <div>
+                                    <div class="person-name">{nome}</div>
+                                    <div class="person-meta">
+                                        <span class="chip chip-muted">{bairro.title()}</span>
+                                        <span class="chip chip-blue">Líder: {lider.title()}</span>
+                                    </div>
+                                </div>
+                                {wa}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
     st.markdown('</div>', unsafe_allow_html=True)
