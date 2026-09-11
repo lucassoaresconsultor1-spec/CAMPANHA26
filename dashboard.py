@@ -60,6 +60,18 @@ def inject_css():
 
         #MainMenu, footer, header {{ visibility: hidden; }}
 
+        @keyframes fadeInUp {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        @keyframes fillBar {{
+            from {{ width: 0%; }}
+        }}
+        @keyframes pulseGlow {{
+            0%, 100% {{ box-shadow: 0 0 0 0 rgba(227, 162, 60, 0.35); }}
+            50% {{ box-shadow: 0 0 0 6px rgba(227, 162, 60, 0); }}
+        }}
+
         .stApp {{
             background: {BG};
         }}
@@ -77,6 +89,7 @@ def inject_css():
             padding: 28px 28px 24px 28px;
             color: white;
             margin-bottom: 22px;
+            animation: fadeInUp 0.5s ease-out;
         }}
         .hero .eyebrow {{
             color: {AMBER};
@@ -114,7 +127,17 @@ def inject_css():
             border: 1px solid {BORDER};
             border-radius: 14px;
             padding: 16px 18px;
+            animation: fadeInUp 0.5s ease-out backwards;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }}
+        .kpi-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -8px rgba(15, 41, 66, 0.18);
+        }}
+        .kpi-grid .kpi-card:nth-child(1) {{ animation-delay: 0.05s; }}
+        .kpi-grid .kpi-card:nth-child(2) {{ animation-delay: 0.12s; }}
+        .kpi-grid .kpi-card:nth-child(3) {{ animation-delay: 0.19s; }}
+        .kpi-grid .kpi-card:nth-child(4) {{ animation-delay: 0.26s; }}
         .kpi-card .kpi-label {{
             color: {MUTED};
             font-size: 0.8rem;
@@ -137,6 +160,7 @@ def inject_css():
             border-radius: 14px;
             padding: 20px 22px;
             margin-bottom: 18px;
+            animation: fadeInUp 0.4s ease-out;
         }}
         .section-title {{
             font-size: 1.15rem;
@@ -155,9 +179,13 @@ def inject_css():
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
+            padding: 10px 6px;
             border-bottom: 1px solid {BORDER};
+            border-radius: 8px;
+            transition: background 0.2s ease;
+            animation: fadeInUp 0.4s ease-out backwards;
         }}
+        .rank-row:hover {{ background: #F7F9FC; }}
         .rank-row:last-child {{ border-bottom: none; }}
         .rank-badge {{
             width: 26px;
@@ -171,10 +199,13 @@ def inject_css():
             font-size: 0.78rem;
             background: #EEF1F5;
             color: {MUTED};
+            transition: transform 0.2s ease;
         }}
+        .rank-row:hover .rank-badge {{ transform: scale(1.08); }}
         .rank-badge.top {{
             background: {AMBER};
             color: white;
+            animation: pulseGlow 2.4s ease-in-out infinite;
         }}
         .rank-info {{ flex: 1; min-width: 0; }}
         .rank-name {{
@@ -193,6 +224,8 @@ def inject_css():
             background: {BLUE};
             height: 100%;
             border-radius: 6px;
+            animation: fillBar 0.9s ease-out;
+            transition: width 0.6s ease;
         }}
         .rank-bar-fill.top {{ background: {AMBER}; }}
         .rank-bar-fill.meta-ok {{ background: {GREEN}; }}
@@ -230,6 +263,13 @@ def inject_css():
             padding: 12px 14px;
             margin-bottom: 8px;
             background: {CARD};
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            animation: fadeInUp 0.35s ease-out;
+        }}
+        .person-card:hover {{
+            transform: translateX(2px);
+            border-color: {BLUE};
+            box-shadow: 0 6px 14px -8px rgba(15, 41, 66, 0.2);
         }}
         .person-top {{
             display: flex;
@@ -256,7 +296,25 @@ def inject_css():
             padding: 5px 11px;
             border-radius: 8px;
             white-space: nowrap;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            display: inline-block;
         }}
+        .wa-link:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px -4px rgba(46, 158, 109, 0.5);
+        }}
+
+        /* Botões nativos do Streamlit */
+        div[data-testid="stButton"] button {{
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }}
+        div[data-testid="stButton"] button:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px -6px rgba(29, 95, 166, 0.4);
+        }}
+
+        /* Menu de navegação horizontal */
+        .nav-link {{ transition: background 0.2s ease, color 0.2s ease; }}
 
         /* Inputs */
         .stSelectbox, .stTextInput {{ font-weight: 600; }}
@@ -443,7 +501,7 @@ st.markdown(
                 <span style="font-weight:700; color:white;">{pct_meta:.0f}%</span>
             </div>
             <div style="background:rgba(255,255,255,0.18); border-radius:8px; height:10px; overflow:hidden;">
-                <div style="width:{pct_meta:.0f}%; background:{cor_meta}; height:100%; border-radius:8px;"></div>
+                <div style="width:{pct_meta:.0f}%; background:{cor_meta}; height:100%; border-radius:8px; animation: fillBar 1.1s ease-out; transition: width 0.6s ease;"></div>
             </div>
             <div style="font-size:0.8rem; color:#C7D3E0; margin-top:6px;">{texto_meta}</div>
         </div>
@@ -523,7 +581,7 @@ if selected == "Lideranças":
             cor_barra = "meta-ok" if atingiu else ""
             legenda = "🏆 meta batida" if atingiu else f"faltam {META_POR_LIDER - row['Total']}"
             rows_html += f"""
-            <div class="rank-row">
+            <div class="rank-row" style="animation-delay:{min(i * 0.05, 0.4):.2f}s">
                 <div class="rank-badge {is_top}">{rank}</div>
                 <div class="rank-info">
                     <div class="rank-name">{row['Líder'].title()}</div>
