@@ -840,7 +840,7 @@ if selected == "Lideranças":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 2: BAIRROS (CORRIGIDO AttributeError)
+# ABA 2: BAIRROS
 # ==========================================
 if selected == "Bairros":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -935,8 +935,6 @@ if selected == "Bairros":
                     
                     wa = whatsapp_link(contato)
                     lider_chip = f'<span class="chip chip-blue">Líder: {lider}</span>' if lider else ""
-                    
-                    # CORREÇÃO DA LINHA 1057 (Verificação Segura de veic.title())
                     veic_chip = f'<span class="chip chip-amber">🚗 {veic}</span>' if veic else ""
                     
                     target_col = cols[idx % 2]
@@ -1056,7 +1054,7 @@ if selected == "Perfil":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 4: VEÍCULOS (CORRIGIDA CONFIRMAÇÃO DIA E)
+# ABA 4: VEÍCULOS
 # ==========================================
 if selected == "Veículos":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -1117,7 +1115,6 @@ if selected == "Veículos":
             contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
             wa = whatsapp_link(contato)
             
-            # VALIDAÇÃO DO DIA E (EXIGE "SIM" NA COLUNA TRABALHO_DIA_PADRAO)
             trabalho_dia_val = str(r.get("TRABALHO_DIA_PADRAO", "")).strip().upper()
             confirmado_dia_e = trabalho_dia_val in VALORES_SIM
             
