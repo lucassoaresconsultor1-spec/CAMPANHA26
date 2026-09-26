@@ -22,46 +22,21 @@ st.set_page_config(
 # =====================================================================
 # 2. IDENTIDADE VISUAL (design tokens)
 # =====================================================================
-# Paleta "centro de comando" premium: base institucional em azul-marinho
-# profundo, com âmbar como acento de destaque (topo do ranking, alertas)
-# e verde reservado para metas atingidas.
-NAVY = "#071A2D"
-NAVY_SOFT = "#123A63"
+# Paleta pensada para um "centro de comando" de campo: base sóbria em
+# azul-marinho (confiança/institucional), cartões neutros e UM único
+# acento (âmbar) reservado para destacar o topo do ranking e alertas.
+NAVY = "#0F2942"
+NAVY_SOFT = "#16385A"
 BLUE = "#1D5FA6"
-AMBER = "#F0A629"
+AMBER = "#E3A23C"
 GREEN = "#2E9E6D"
 BG = "#F4F6F9"
 CARD = "#FFFFFF"
-TEXT = "#16202A"
-MUTED = "#728096"
-BORDER = "#E6EBF2"
-AMBER_TEXT = "#8A5A12"  # tom escuro do âmbar, usado só em texto sobre fundo claro
+TEXT = "#1B2430"
+MUTED = "#6B7686"
+BORDER = "#E4E8EE"
 
 PLOTLY_FONT = "Manrope, sans-serif"
-PLOTLY_PALETTE = [BLUE, AMBER, GREEN]
-
-
-def estilizar_grafico(fig, height=320, margin=None):
-    """Aplica a identidade visual premium (fonte, cores, grid) a qualquer
-    figura Plotly do painel, sem tocar nos dados ou na lógica do gráfico."""
-    fig.update_layout(
-        font_family=PLOTLY_FONT,
-        font_color=TEXT,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        margin=margin or dict(l=0, r=10, t=10, b=10),
-        height=height,
-        hoverlabel=dict(
-            bgcolor="white",
-            bordercolor=BORDER,
-            font_size=12,
-            font_family=PLOTLY_FONT,
-        ),
-        hovermode="closest",
-    )
-    fig.update_xaxes(showgrid=False, zeroline=False, linecolor=BORDER)
-    fig.update_yaxes(showgrid=True, gridcolor=BORDER, zeroline=False, linecolor=BORDER)
-    return fig
 
 # Metas de campanha
 META_CAMPANHA = 165
@@ -93,142 +68,71 @@ def inject_css():
             from {{ width: 0%; }}
         }}
         @keyframes pulseGlow {{
-            0%, 100% {{ box-shadow: 0 0 0 0 rgba(240, 166, 41, 0.35); }}
-            50% {{ box-shadow: 0 0 0 7px rgba(240, 166, 41, 0); }}
-        }}
-        @keyframes shimmer {{
-            0% {{ background-position: -200% 0; }}
-            100% {{ background-position: 200% 0; }}
+            0%, 100% {{ box-shadow: 0 0 0 0 rgba(227, 162, 60, 0.35); }}
+            50% {{ box-shadow: 0 0 0 6px rgba(227, 162, 60, 0); }}
         }}
 
-        /* ---------- Fundo institucional com glow suave ---------- */
         .stApp {{
             background: {BG};
-            position: relative;
-        }}
-        .stApp::before, .stApp::after {{
-            content: "";
-            position: fixed;
-            width: 620px;
-            height: 620px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-        }}
-        .stApp::before {{
-            top: -260px;
-            right: -220px;
-            background: radial-gradient(circle, rgba(29, 95, 166, 0.14), transparent 70%);
-        }}
-        .stApp::after {{
-            bottom: -260px;
-            left: -220px;
-            background: radial-gradient(circle, rgba(240, 166, 41, 0.12), transparent 70%);
         }}
 
         .block-container {{
             padding-top: 1rem;
             padding-bottom: 3rem;
             max-width: 1200px;
-            position: relative;
-            z-index: 1;
         }}
 
-        /* ---------- Cabeçalho (hero / centro de comando) ---------- */
+        /* ---------- Cabeçalho ---------- */
         .hero {{
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 55%, {BLUE} 100%);
-            border-radius: 22px;
-            padding: 32px 32px 28px 32px;
+            background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 100%);
+            border-radius: 18px;
+            padding: 28px 28px 24px 28px;
             color: white;
-            margin-bottom: 24px;
-            box-shadow: 0 24px 44px -20px rgba(7, 26, 45, 0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+            margin-bottom: 22px;
             animation: fadeInUp 0.5s ease-out;
         }}
-        .hero::before {{
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 12% -20%, rgba(255,255,255,0.18), transparent 55%);
-            pointer-events: none;
-        }}
-        .hero::after {{
-            content: "";
-            position: absolute;
-            top: -50%;
-            right: -8%;
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(240,166,41,0.28), transparent 70%);
-            pointer-events: none;
-        }}
         .hero .eyebrow {{
-            position: relative;
             color: {AMBER};
-            font-weight: 800;
-            font-size: 0.8rem;
-            letter-spacing: 1.2px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.2px;
             margin-bottom: 4px;
-            z-index: 1;
         }}
         .hero h1 {{
-            position: relative;
             margin: 0;
-            font-size: 2.05rem;
+            font-size: 2rem;
             font-weight: 800;
             line-height: 1.15;
-            letter-spacing: -0.01em;
-            z-index: 1;
         }}
         .hero p {{
-            position: relative;
             margin-top: 6px;
             color: #C7D3E0;
             font-size: 0.92rem;
-            z-index: 1;
         }}
 
-        /* ---------- Grid de indicadores (KPIs) ---------- */
+        /* ---------- Grid de indicadores ---------- */
         .kpi-grid {{
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 14px;
             margin-bottom: 8px;
         }}
-        @media (max-width: 900px) {{
-            .kpi-grid {{ grid-template-columns: repeat(2, 1fr); }}
-        }}
         @media (max-width: 680px) {{
-            .kpi-grid {{ grid-template-columns: repeat(2, 1fr); gap: 10px; }}
+            .kpi-grid {{ grid-template-columns: repeat(2, 1fr); }}
             .hero h1 {{ font-size: 1.5rem; }}
-            .hero {{ padding: 22px 18px; border-radius: 18px; }}
-        }}
-        @media (max-width: 420px) {{
-            .kpi-grid {{ grid-template-columns: 1fr; }}
+            .hero {{ padding: 20px 18px; }}
         }}
         .kpi-card {{
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%);
+            background: {CARD};
             border: 1px solid {BORDER};
-            border-radius: 16px;
-            padding: 18px 20px 16px 20px;
-            box-shadow: 0 10px 22px -16px rgba(7, 26, 45, 0.2);
+            border-radius: 14px;
+            padding: 16px 18px;
             animation: fadeInUp 0.5s ease-out backwards;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }}
-        .kpi-card::before {{
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, {BLUE}, {AMBER});
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }}
         .kpi-card:hover {{
-            transform: translateY(-4px);
-            box-shadow: 0 18px 32px -16px rgba(7, 41, 66, 0.28);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -8px rgba(15, 41, 66, 0.18);
         }}
         .kpi-grid .kpi-card:nth-child(1) {{ animation-delay: 0.05s; }}
         .kpi-grid .kpi-card:nth-child(2) {{ animation-delay: 0.12s; }}
@@ -237,29 +141,25 @@ def inject_css():
         .kpi-card .kpi-label {{
             color: {MUTED};
             font-size: 0.8rem;
-            font-weight: 700;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 6px;
         }}
         .kpi-card .kpi-value {{
             color: {TEXT};
-            font-size: 2.15rem;
+            font-size: 1.9rem;
             font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-top: 5px;
+            margin-top: 4px;
         }}
 
-        /* ---------- Cartão de seção (glassmorphism leve) ---------- */
+        /* ---------- Cartão de seção ---------- */
         .section-card {{
-            background: rgba(255, 255, 255, 0.78);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: {CARD};
             border: 1px solid {BORDER};
-            border-radius: 18px;
-            padding: 22px 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 14px 30px -22px rgba(7, 26, 45, 0.18);
+            border-radius: 14px;
+            padding: 20px 22px;
+            margin-bottom: 18px;
             animation: fadeInUp 0.4s ease-out;
         }}
         .section-title {{
@@ -274,52 +174,38 @@ def inject_css():
             margin-bottom: 16px;
         }}
 
-        /* ---------- Ranking de líderes (leaderboard premium) ---------- */
+        /* ---------- Ranking de líderes ---------- */
         .rank-row {{
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 11px 8px;
+            padding: 10px 6px;
             border-bottom: 1px solid {BORDER};
-            border-radius: 10px;
-            transition: background 0.2s ease, transform 0.2s ease;
+            border-radius: 8px;
+            transition: background 0.2s ease;
             animation: fadeInUp 0.4s ease-out backwards;
         }}
-        .rank-row:hover {{ background: #F7F9FC; transform: translateX(2px); }}
+        .rank-row:hover {{ background: #F7F9FC; }}
         .rank-row:last-child {{ border-bottom: none; }}
         .rank-badge {{
-            width: 30px;
-            height: 30px;
-            min-width: 30px;
-            border-radius: 9px;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 0.95rem;
+            font-size: 0.78rem;
             background: #EEF1F5;
             color: {MUTED};
             transition: transform 0.2s ease;
         }}
-        .rank-row:hover .rank-badge {{ transform: scale(1.1) rotate(-2deg); }}
-        .rank-badge.gold {{
-            background: linear-gradient(135deg, #FFE39B, {AMBER});
-            color: #5B3A08;
-            box-shadow: 0 4px 10px -3px rgba(240, 166, 41, 0.55);
+        .rank-row:hover .rank-badge {{ transform: scale(1.08); }}
+        .rank-badge.top {{
+            background: {AMBER};
+            color: white;
             animation: pulseGlow 2.4s ease-in-out infinite;
-            font-size: 1.05rem;
-        }}
-        .rank-badge.silver {{
-            background: linear-gradient(135deg, #F1F3F6, #C7CDD6);
-            color: #3B4250;
-            box-shadow: 0 4px 10px -3px rgba(120, 130, 145, 0.4);
-            font-size: 1.05rem;
-        }}
-        .rank-badge.bronze {{
-            background: linear-gradient(135deg, #E9C29A, #B5773F);
-            color: #43270C;
-            box-shadow: 0 4px 10px -3px rgba(181, 119, 63, 0.45);
-            font-size: 1.05rem;
         }}
         .rank-info {{ flex: 1; min-width: 0; }}
         .rank-name {{
@@ -341,8 +227,8 @@ def inject_css():
             animation: fillBar 0.9s ease-out;
             transition: width 0.6s ease;
         }}
-        .rank-bar-fill.top {{ background: linear-gradient(90deg, {AMBER}, #FFD37A); }}
-        .rank-bar-fill.meta-ok {{ background: linear-gradient(90deg, {GREEN}, #55C793); }}
+        .rank-bar-fill.top {{ background: {AMBER}; }}
+        .rank-bar-fill.meta-ok {{ background: {GREEN}; }}
         .rank-count {{
             text-align: right;
             min-width: 64px;
@@ -367,83 +253,8 @@ def inject_css():
         }}
         .chip-blue {{ background: #E7F0FA; color: {BLUE}; }}
         .chip-green {{ background: #E5F5EE; color: {GREEN}; }}
-        .chip-amber {{ background: #FCF1DF; color: {AMBER_TEXT}; }}
+        .chip-amber {{ background: #FCF1DF; color: #A9701C; }}
         .chip-muted {{ background: #EEF1F5; color: {MUTED}; }}
-
-        /* ---------- Tela de login (institucional) ---------- */
-        .login-card {{
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 60%, {BLUE} 100%);
-            border-radius: 24px;
-            padding: 42px 36px 34px 36px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 28px 55px -20px rgba(7, 26, 45, 0.55), inset 0 1px 0 rgba(255,255,255,0.08);
-            animation: fadeInUp 0.5s ease-out;
-        }}
-        .login-card::before {{
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 20% -10%, rgba(255,255,255,0.18), transparent 55%);
-            pointer-events: none;
-        }}
-        .login-card::after {{
-            content: "";
-            position: absolute;
-            bottom: -50%;
-            left: -10%;
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(240,166,41,0.25), transparent 70%);
-            pointer-events: none;
-        }}
-        .login-shield {{
-            position: relative;
-            width: 66px;
-            height: 66px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.9rem;
-            margin: 0 auto 14px auto;
-            z-index: 1;
-        }}
-        .login-eyebrow {{
-            position: relative;
-            color: {AMBER};
-            font-weight: 800;
-            font-size: 0.78rem;
-            letter-spacing: 1.4px;
-            z-index: 1;
-        }}
-        .login-title {{
-            position: relative;
-            margin: 6px 0 2px 0;
-            font-size: 1.7rem;
-            font-weight: 800;
-            z-index: 1;
-        }}
-        .login-sub {{
-            position: relative;
-            color: {AMBER};
-            font-weight: 700;
-            font-size: 0.82rem;
-            margin: 0;
-            z-index: 1;
-        }}
-        .login-desc {{
-            position: relative;
-            color: #C7D3E0;
-            font-size: 0.88rem;
-            margin-top: 14px;
-            z-index: 1;
-        }}
 
         /* ---------- Cartão de pessoa (bairro / veículo) ---------- */
         .person-card {{
@@ -607,12 +418,10 @@ def verificar_senha():
 
     st.markdown(
         f"""
-        <div class="login-card" style="max-width:440px; margin:70px auto 0 auto;">
-            <div class="login-shield">🛡️</div>
-            <div class="login-eyebrow">ACESSO RESTRITO</div>
-            <h1 class="login-title">Campanha 2026</h1>
-            <div class="login-sub">PAINEL DE CAMPO · CENTRO DE COMANDO</div>
-            <p class="login-desc">Digite a senha da equipe para entrar no painel.</p>
+        <div class="hero" style="max-width:420px; margin:60px auto 0 auto; text-align:center;">
+            <div class="eyebrow">ACESSO RESTRITO</div>
+            <h1 style="font-size:1.5rem;">Campanha 2026</h1>
+            <p>Digite a senha da equipe para entrar no painel de campo.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -750,31 +559,10 @@ selected = option_menu(
     icons=["people-fill", "geo-alt-fill", "bullseye", "car-front-fill", "star-fill"],
     orientation="horizontal",
     styles={
-        "container": {
-            "padding": "6px",
-            "background-color": CARD,
-            "border": f"1px solid {BORDER}",
-            "border-radius": "14px",
-            "margin-bottom": "20px",
-            "box-shadow": "0 12px 26px -20px rgba(7, 26, 45, 0.25)",
-        },
+        "container": {"padding": "4px", "background-color": CARD, "border": f"1px solid {BORDER}", "border-radius": "12px", "margin-bottom": "18px"},
         "icon": {"color": MUTED, "font-size": "14px"},
-        "nav-link": {
-            "font-family": "Manrope, sans-serif",
-            "font-weight": "700",
-            "font-size": "0.85rem",
-            "color": MUTED,
-            "text-align": "center",
-            "border-radius": "10px",
-            "padding": "11px 10px",
-            "margin": "0 3px",
-            "--hover-color": "#EEF3FA",
-        },
-        "nav-link-selected": {
-            "background-color": NAVY,
-            "color": "white",
-            "box-shadow": "0 8px 16px -6px rgba(7, 26, 45, 0.45)",
-        },
+        "nav-link": {"font-family": "Manrope, sans-serif", "font-weight": "700", "font-size": "0.85rem", "color": MUTED, "text-align": "center", "border-radius": "9px", "padding": "10px 8px"},
+        "nav-link-selected": {"background-color": "#E7F0FA", "color": BLUE},
     },
 )
 
@@ -803,18 +591,17 @@ if selected == "Lideranças":
             unsafe_allow_html=True,
         )
 
-        MEDALHAS = {1: ("gold", "🥇"), 2: ("silver", "🥈"), 3: ("bronze", "🥉")}
         rows_html = ""
         for i, row in df_lideres.iterrows():
             rank = i + 1
-            badge_class, badge_conteudo = MEDALHAS.get(rank, ("", str(rank)))
+            is_top = "top" if rank == 1 else ""
             atingiu = row["Total"] >= META_POR_LIDER
             largura = min(row["Total"] / META_POR_LIDER * 100, 100) if META_POR_LIDER else 0
-            cor_barra = "meta-ok" if atingiu else ("top" if rank == 1 else "")
+            cor_barra = "meta-ok" if atingiu else ""
             legenda = "🏆 meta batida" if atingiu else f"faltam {META_POR_LIDER - row['Total']}"
             rows_html += f"""
             <div class="rank-row" style="animation-delay:{min(i * 0.05, 0.4):.2f}s">
-                <div class="rank-badge {badge_class}">{badge_conteudo}</div>
+                <div class="rank-badge {is_top}">{rank}</div>
                 <div class="rank-info">
                     <div class="rank-name">{row['Líder'].title()}</div>
                     <div class="rank-bar-track"><div class="rank-bar-fill {cor_barra}" style="width:{largura:.0f}%"></div></div>
@@ -835,31 +622,18 @@ if selected == "Lideranças":
         fig_lider = px.bar(
             df_lideres, x="Total", y="Líder", orientation="h", text="Total",
         )
-        cores_barras = []
-        for i in range(len(df_lideres)):
-            if i == 0:
-                cores_barras.append(AMBER)
-            elif i == 1:
-                cores_barras.append(BLUE)
-            elif i == 2:
-                cores_barras.append(GREEN)
-            else:
-                cores_barras.append(BLUE)
         fig_lider.update_traces(
-            marker_color=cores_barras,
+            marker_color=[AMBER if i == 0 else BLUE for i in range(len(df_lideres))],
             textposition="outside",
             marker_line_width=0,
-            textfont=dict(family=PLOTLY_FONT, color=TEXT, size=12),
         )
         fig_lider.update_layout(
+            font_family=PLOTLY_FONT, font_color=TEXT,
             xaxis_title="", yaxis_title="",
             yaxis={"categoryorder": "total ascending"},
-            bargap=0.28,
-        )
-        estilizar_grafico(
-            fig_lider,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=10, t=10, b=10),
             height=max(280, 42 * len(df_lideres)),
-            margin=dict(l=0, r=20, t=10, b=10),
         )
         fig_lider.update_xaxes(showgrid=True, gridcolor=BORDER)
         st.plotly_chart(fig_lider, use_container_width=True, config={"displayModeBar": False})
@@ -990,15 +764,14 @@ if selected == "Perfil":
         df_faixa = df_faixa.sort_values("ordem")
 
         fig_faixa = px.bar(df_faixa, x="Faixa Etária", y="Quantidade", text="Quantidade")
-        cores_faixa = [PLOTLY_PALETTE[i % len(PLOTLY_PALETTE)] for i in range(len(df_faixa))]
-        fig_faixa.update_traces(
-            marker_color=cores_faixa,
-            textposition="outside",
-            marker_line_width=0,
-            textfont=dict(family=PLOTLY_FONT, color=TEXT, size=12),
+        fig_faixa.update_traces(marker_color=BLUE, textposition="outside", marker_line_width=0)
+        fig_faixa.update_layout(
+            font_family=PLOTLY_FONT, font_color=TEXT,
+            xaxis_title="", yaxis_title="",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=0, t=10, b=10), height=320,
         )
-        fig_faixa.update_layout(xaxis_title="", yaxis_title="", bargap=0.35)
-        estilizar_grafico(fig_faixa, height=320, margin=dict(l=0, r=0, t=10, b=10))
+        fig_faixa.update_yaxes(showgrid=True, gridcolor=BORDER)
         st.plotly_chart(fig_faixa, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
