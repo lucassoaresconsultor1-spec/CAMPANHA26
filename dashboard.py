@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -83,7 +83,7 @@ def inject_css():
         @keyframes pulseDot {{
             0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 158, 109, 0.7); }}
             70% {{ transform: scale(1); box-shadow: 0 0 0 8px rgba(46, 158, 109, 0); }}
-            100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 158, 109, 0); }}
+            100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 158, 109, 0.7); }}
         }}
         @keyframes goldShine {{
             0% {{ box-shadow: 0 0 0 0 rgba(240, 166, 41, 0.4); }}
@@ -159,8 +159,40 @@ def inject_css():
             font-size: 0.96rem;
             font-weight: 500;
         }}
+        
+        /* BOX CONTAGEM REGRESSIVA */
+        .countdown-box {{
+            margin-top: 18px;
+            background: rgba(240, 166, 41, 0.15);
+            border: 1px solid rgba(240, 166, 41, 0.4);
+            border-radius: 16px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            backdrop-filter: blur(10px);
+        }}
+        .countdown-icon {{
+            font-size: 1.8rem;
+            line-height: 1;
+        }}
+        .countdown-title {{
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #FCE7F3;
+        }}
+        .countdown-text {{
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: {AMBER};
+            margin-top: 2px;
+            line-height: 1.1;
+        }}
+
         .hero-progress-wrapper {{
-            margin-top: 24px;
+            margin-top: 18px;
             background: rgba(7, 26, 45, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.12);
             padding: 16px 20px;
@@ -228,7 +260,7 @@ def inject_css():
             letter-spacing: -0.8px;
         }}
 
-        /* ---------- SECTION CONTAINERS (Glassmorphism Light) ---------- */
+        /* ---------- SECTION CONTAINERS ---------- */
         .section-card {{
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
@@ -257,6 +289,73 @@ def inject_css():
             color: {MUTED};
             font-size: 0.88rem;
             font-weight: 500;
+            margin-top: 2px;
+        }}
+
+        /* ---------- INTERACTIVE CARDS BAIRRO & VEÍCULOS ---------- */
+        .bairro-card-interactive {{
+            background: #FFFFFF;
+            border: 1px solid {BORDER};
+            border-radius: 18px;
+            padding: 20px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-shadow: 0 4px 12px rgba(7, 26, 45, 0.03);
+            margin-bottom: 16px;
+        }}
+        .bairro-card-interactive:hover {{
+            transform: translateY(-3px);
+            border-color: {BLUE};
+            box-shadow: 0 12px 24px rgba(7, 26, 45, 0.08);
+        }}
+        .bairro-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }}
+        .bairro-name {{
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: {NAVY};
+            letter-spacing: -0.3px;
+        }}
+        .bairro-stats-pills {{
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed {BORDER};
+        }}
+
+        .veiculo-card-interactive {{
+            background: #FFFFFF;
+            border: 1px solid {BORDER};
+            border-radius: 18px;
+            padding: 22px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-shadow: 0 4px 12px rgba(7, 26, 45, 0.03);
+            margin-bottom: 16px;
+        }}
+        .veiculo-card-interactive:hover {{
+            transform: translateY(-3px);
+            border-color: {BLUE};
+            box-shadow: 0 12px 24px rgba(7, 26, 45, 0.08);
+        }}
+        .veiculo-title {{
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: {NAVY};
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .veiculo-owner {{
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: {MUTED};
             margin-top: 2px;
         }}
 
@@ -479,7 +578,7 @@ def inject_css():
 
 
 # =====================================================================
-# 3. CARREGAMENTO E TRATAMENTO DOS DADOS (Preservado)
+# 3. CARREGAMENTO E TRATAMENTO DOS DADOS
 # =====================================================================
 URL_SHEETS = "https://docs.google.com/spreadsheets/d/1YBtjLKdfZ-waj_s51MauE7Zo5xYs_TnjjhiT_WkA9Rc/export?format=csv"
 
@@ -624,7 +723,7 @@ else:
     df_veiculos_filtro = pd.DataFrame()
     veiculos_mapeados = 0
 
-# ---------- Filtro de Apoio Extra: Adesivo e Trabalho no Dia ----------
+# ---------- Filtro de Apoio Extra ----------
 VALORES_SIM = ["SIM", "S", "YES", "X", "TRUE", "1"]
 
 if "ADESIVO_PADRAO" in df.columns:
@@ -648,10 +747,24 @@ bairros_cobertos = (
 )
 
 # =====================================================================
-# 4. INTERFACE
+# 4. INTERFACE E LÓGICA TEMPORAL (CONTAGEM REGRESSIVA DINÂMICA)
 # =====================================================================
 inject_css()
 verificar_senha()
+
+# --- LÓGICA DE CONTAGEM REGRESSIVA DINÂMICA (ELEIÇÃO: 04/10/2026) ---
+hoje = date.today()
+data_eleicao = date(2026, 10, 4)
+dias_restantes = (data_eleicao - hoje).days
+
+if dias_restantes > 1:
+    texto_dias = f"Faltam <b>{dias_restantes} dias</b> para as eleições."
+elif dias_restantes == 1:
+    texto_dias = "Falta apenas <b>1 dia</b> para as eleições!"
+elif dias_restantes == 0:
+    texto_dias = "É HOJE! Dia da Eleição! 🗳️"
+else:
+    texto_dias = f"Eleições realizadas há {abs(dias_restantes)} dias."
 
 agora = datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y às %H:%M")
 pct_meta = min(total_cadastros / META_CAMPANHA * 100, 100) if META_CAMPANHA else 0
@@ -676,6 +789,16 @@ st.markdown(
         </div>
         <h1>Painel de Operações de Campo</h1>
         <p>Monitoramento estratégico de mobilização, territorialidade e base de apoio em tempo real.</p>
+        
+        <!-- CARD DE CONTAGEM REGRESSIVA ELEITORAL -->
+        <div class="countdown-box">
+            <div class="countdown-icon">⏳</div>
+            <div>
+                <div class="countdown-title">Contagem Regressiva · Eleições 04/10/2026</div>
+                <div class="countdown-text">{texto_dias}</div>
+            </div>
+        </div>
+
         <div class="hero-progress-wrapper">
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; color:#E2E8F0; margin-bottom:8px; font-weight:700;">
                 <span>Progresso da Meta Geral da Campanha</span>
@@ -833,66 +956,122 @@ if selected == "Lideranças":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 2: BAIRROS
+# ABA 2: BAIRROS (REFORMULADA & INTERATIVA)
 # ==========================================
 if selected == "Bairros":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown(
         '''
         <div class="section-header-wrap">
-            <div class="section-title">📍 Mapeamento Territorial de Bairros</div>
-            <div class="section-subtitle">Localização exata e relação de apoiadores por região</div>
+            <div class="section-title">📍 Centro Mapeado Territorial por Bairro</div>
+            <div class="section-subtitle">Distribuição geográfica, cobertura de apoiadores e agrupamento por regiõess</div>
         </div>
         ''', 
         unsafe_allow_html=True
     )
 
     if "BAIRRO_PADRAO" in df.columns:
-        bairros_validos = sorted(
-            [b for b in df["BAIRRO_PADRAO"].dropna().unique() if b not in ["NAN", "NONE", ""]]
+        df_bairros_validos = df[~df["BAIRRO_PADRAO"].isin(["NAN", "NONE", ""])]
+        
+        # Agrupamento para métricas dos cards
+        bairros_summary = (
+            df_bairros_validos.groupby("BAIRRO_PADRAO")
+            .agg(
+                Total_Apoiadores=("BAIRRO_PADRAO", "count"),
+                Lideres_Distintos=("LIDER_PADRAO", lambda x: len(set(x.dropna()) - {"NAN", "NONE", ""})),
+                Veiculos=("VEICULO_INFO_PADRAO", lambda x: len([v for v in x if str(v).upper() not in ["NONE", "NAO", "NÃO", "NAN", "", "NENHUM"]]))
+            )
+            .reset_index()
+            .sort_values(by="Total_Apoiadores", ascending=False)
         )
+
+        # Gráfico Visual de Volume de Bairros
+        fig_bairros = px.bar(
+            bairros_summary.head(10),
+            x="BAIRRO_PADRAO",
+            y="Total_Apoiadores",
+            text="Total_Apoiadores",
+            color_discrete_sequence=[BLUE],
+        )
+        fig_bairros.update_traces(
+            textposition="outside",
+            marker_line_width=0,
+            textfont=dict(size=12, color=TEXT, family=PLOTLY_FONT)
+        )
+        fig_bairros.update_layout(
+            font_family=PLOTLY_FONT, font_color=TEXT,
+            xaxis_title="", yaxis_title="",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=0, t=20, b=10), height=300,
+        )
+        fig_bairros.update_yaxes(showgrid=True, gridcolor=BORDER)
+        
+        st.markdown("<h4 style='font-size:1rem; font-weight:800; color:#071A2D; margin-bottom:12px;'>🔥 Top 10 Bairros com Maior Presença</h4>", unsafe_allow_html=True)
+        st.plotly_chart(fig_bairros, use_container_width=True, config={"displayModeBar": False})
+        
+        st.markdown("<hr style='border:none; border-top:1px solid #E6EBF2; margin:24px 0;'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='font-size:1rem; font-weight:800; color:#071A2D; margin-bottom:12px;'>🔍 Explorador Dinâmico de Bairros</h4>", unsafe_allow_html=True)
+
         col_f1, col_f2 = st.columns([2, 2])
         with col_f1:
-            bairro_sel = st.selectbox("Filtrar por bairro", ["Todos os bairros"] + bairros_validos)
+            lista_bairros_select = ["Todos os Bairros"] + list(bairros_summary["BAIRRO_PADRAO"])
+            bairro_sel = st.selectbox("Selecione para filtrar visualização", lista_bairros_select)
         with col_f2:
-            busca_nome = st.text_input("Buscar por nome", placeholder="Digite um nome para localizar...")
+            busca_nome = st.text_input("Buscar apoiador por nome", placeholder="Digite um nome...")
 
-        df_bairros_filtro = df.copy()
-        if bairro_sel != "Todos os bairros":
-            df_bairros_filtro = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == bairro_sel]
-        if busca_nome and "NOME_PADRAO" in df_bairros_filtro.columns:
-            df_bairros_filtro = df_bairros_filtro[
-                df_bairros_filtro["NOME_PADRAO"].str.contains(busca_nome.upper(), na=False)
+        df_filtrado_bairros = df_bairros_validos.copy()
+        if bairro_sel != "Todos os Bairros":
+            df_filtrado_bairros = df_filtrado_bairros[df_filtrado_bairros["BAIRRO_PADRAO"] == bairro_sel]
+        if busca_nome and "NOME_PADRAO" in df_filtrado_bairros.columns:
+            df_filtrado_bairros = df_filtrado_bairros[
+                df_filtrado_bairros["NOME_PADRAO"].str.contains(busca_nome.upper(), na=False)
             ]
 
-        contagem_bairros = (
-            df_bairros_filtro["BAIRRO_PADRAO"].value_counts().drop(labels=["NAN", ""], errors="ignore")
+        bairros_para_exibir = (
+            [bairro_sel] if bairro_sel != "Todos os Bairros" 
+            else list(df_filtrado_bairros["BAIRRO_PADRAO"].unique())
         )
-        st.markdown("<br>", unsafe_allow_html=True)
 
-        for b in contagem_bairros.index.tolist():
-            sub_df = df_bairros_filtro[df_bairros_filtro["BAIRRO_PADRAO"] == b]
-            with st.expander(f"📍  {b.title()} · {len(sub_df)} apoiador(es)"):
-                for _, r in sub_df.iterrows():
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Renderização Interativa em Grid/Expanders Elegantes
+        for b in bairros_para_exibir:
+            if b in ["NAN", "", "NONE"]: continue
+            sub_df = df_filtrado_bairros[df_filtrado_bairros["BAIRRO_PADRAO"] == b]
+            if sub_df.empty: continue
+            
+            num_apoiadores = len(sub_df)
+            num_lideres = sub_df["LIDER_PADRAO"].replace("NAN", np.nan).dropna().nunique() if "LIDER_PADRAO" in sub_df else 0
+            num_veiculos = len(sub_df[~sub_df["VEICULO_INFO_PADRAO"].isin(["NONE", "NAO", "NÃO", "NAN", "", "NENHUM"])]) if "VEICULO_INFO_PADRAO" in sub_df else 0
+            
+            with st.expander(f"📍 {b.title()} — {num_apoiadores} Apoiador(es) | 👤 {num_lideres} Líder(es) | 🚗 {num_veiculos} Veículo(s)"):
+                cols = st.columns(2)
+                for idx, (_, r) in enumerate(sub_df.iterrows()):
                     nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
                     lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
+                    veic = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
+                    
                     wa = whatsapp_link(contato)
                     lider_chip = f'<span class="chip chip-blue">Líder: {lider.title()}</span>' if lider and lider not in ("NAN", "NONE", "") else ""
-                    st.markdown(
-                        f"""
-                        <div class="person-card">
-                            <div class="person-top">
-                                <div>
-                                    <div class="person-name">{nome}</div>
-                                    <div class="person-meta">{lider_chip}</div>
+                    veic_chip = f'<span class="chip chip-amber">🚗 {veic.title()}</span>' if veic and veic not in ("NAN", "NONE", "NAO", "NÃO", "NENHUM") else ""
+                    
+                    target_col = cols[idx % 2]
+                    with target_col:
+                        st.markdown(
+                            f"""
+                            <div class="person-card">
+                                <div class="person-top">
+                                    <div>
+                                        <div class="person-name">{nome}</div>
+                                        <div class="person-meta">{lider_chip} {veic_chip}</div>
+                                    </div>
+                                    {wa}
                                 </div>
-                                {wa}
                             </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                            """,
+                            unsafe_allow_html=True,
+                        )
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
@@ -994,15 +1173,15 @@ if selected == "Perfil":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 4: VEÍCULOS
+# ABA 4: VEÍCULOS (REFORMULADA & INTERATIVA)
 # ==========================================
 if selected == "Veículos":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown(
         '''
         <div class="section-header-wrap">
-            <div class="section-title">🚗 Frota e Logística de Transporte</div>
-            <div class="section-subtitle">Mapeamento de veículos disponíveis para o Dia da Eleição</div>
+            <div class="section-title">🚗 Central de Logística & Frota do Dia E</div>
+            <div class="section-subtitle">Mapeamento de veículos, suporte móvel e distribuição por região operacional</div>
         </div>
         ''', 
         unsafe_allow_html=True
@@ -1013,47 +1192,72 @@ if selected == "Veículos":
             df_veiculos_filtro["BAIRRO_PADRAO"].replace("NAN", np.nan).nunique()
             if "BAIRRO_PADRAO" in df_veiculos_filtro else 0
         )
-        c1, c2 = st.columns(2)
-        c1.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">🚙</div><div class="kpi-label">Veículos Cadastrados</div><div class="kpi-value">{len(df_veiculos_filtro)}</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">📍</div><div class="kpi-label">Bairros Atendidos</div><div class="kpi-value">{bairros_com_veic}</div></div>', unsafe_allow_html=True)
+        
+        # Dashboard de Estatísticas de Frota
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">🚙</div><div class="kpi-label">Frota Mapeada</div><div class="kpi-value">{len(df_veiculos_filtro)}</div></div>', unsafe_allow_html=True)
+        with col_m2:
+            st.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">📍</div><div class="kpi-label">Bairros Atendidos</div><div class="kpi-value">{bairros_com_veic}</div></div>', unsafe_allow_html=True)
+        with col_m3:
+            ratio = (len(df_veiculos_filtro) / total_cadastros * 100) if total_cadastros > 0 else 0
+            st.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">⚡</div><div class="kpi-label">Capacidade Móvel</div><div class="kpi-value">{ratio:.1f}%</div></div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        bairros_v_validos = sorted(
-            [b for b in df_veiculos_filtro["BAIRRO_PADRAO"].dropna().unique() if b not in ["NAN", "NONE", ""]]
-        )
-        bairro_v_sel = st.selectbox("Filtrar veículos por bairro", ["Todos os bairros"] + bairros_v_validos)
+        # Filtros e Buscas Interativas
+        c_v1, c_v2 = st.columns([2, 2])
+        with c_v1:
+            bairros_v_validos = sorted(
+                [b for b in df_veiculos_filtro["BAIRRO_PADRAO"].dropna().unique() if b not in ["NAN", "NONE", ""]]
+            )
+            bairro_v_sel = st.selectbox("Filtrar frota por bairro", ["Todos os bairros"] + bairros_v_validos)
+        with c_v2:
+            busca_veiculo = st.text_input("Filtrar por modelo de veículo ou motorista", placeholder="Ex: Gol, Fiat, João...")
 
         df_veic_exibir = df_veiculos_filtro.copy()
         if bairro_v_sel != "Todos os bairros":
             df_veic_exibir = df_veic_exibir[df_veic_exibir["BAIRRO_PADRAO"] == bairro_v_sel]
+        if busca_veiculo:
+            termo = busca_veiculo.upper()
+            df_veic_exibir = df_veic_exibir[
+                df_veic_exibir["VEICULO_INFO_PADRAO"].str.contains(termo, na=False) |
+                df_veic_exibir["NOME_PADRAO"].str.contains(termo, na=False)
+            ]
 
         st.markdown("<br>", unsafe_allow_html=True)
-        for _, r in df_veic_exibir.iterrows():
+        
+        # Grid Interativo em Duas Colunas
+        cols_veic = st.columns(2)
+        for idx, (_, r) in enumerate(df_veic_exibir.iterrows()):
             nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
             bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
             veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
             lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
             contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
             wa = whatsapp_link(contato)
-            st.markdown(
-                f"""
-                <div class="person-card">
-                    <div class="person-top">
-                        <div>
-                            <div class="person-name">{nome}</div>
-                            <div class="person-meta">🚙 <b>{veiculo.title()}</b></div>
-                            <div class="person-meta" style="margin-top:6px;">
-                                <span class="chip chip-muted">📍 {bairro.title()}</span>
-                                <span class="chip chip-blue">Líder: {lider.title()}</span>
+            
+            target_col = cols_veic[idx % 2]
+            with target_col:
+                st.markdown(
+                    f"""
+                    <div class="veiculo-card-interactive">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <div class="veiculo-title">🚗 {veiculo.title()}</div>
+                                <div class="veiculo-owner">Motorista / Responsável: <b>{nome}</b></div>
                             </div>
+                            <div>{wa}</div>
                         </div>
-                        {wa}
+                        <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <span class="chip chip-muted">📍 {bairro.title()}</span>
+                            <span class="chip chip-blue">Líder: {lider.title()}</span>
+                            <span class="chip chip-green">✓ Confirmado Dia E</span>
+                        </div>
                     </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                    """,
+                    unsafe_allow_html=True,
+                )
     else:
         st.info("Nenhum apoiador com veículo registrado na planilha.")
     st.markdown('</div>', unsafe_allow_html=True)
