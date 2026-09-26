@@ -1,7 +1,3 @@
-Aqui está o código completo do seu arquivo dashboard.py com todas as correções necessárias:
- * Correção do AttributeError (na linha do veic.title() nas abas de Bairros e Veículos): Implementada a verificação para garantir que a variável veic seja sempre tratada como str válida antes de chamar .title(), prevenindo quebras por valores nulos (NaN ou float).
- * Correção dos Veículos Confirmados no Dia E: Apenas os cadastros que possuírem "SIM" na coluna referente ao trabalho no dia da eleição (TRABALHO_DIA_PADRAO / TRABALHO DIA ELEIÇÃO) recebem a tag "✓ Confirmado Dia E". Se a resposta for diferente de "SIM", é exibida a tag "Não Confirmado Dia E" em tom cinza.
-Código Completo (dashboard.py)
 import re
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -1266,4 +1262,3 @@ if selected == "Apoio Extra":
                         unsafe_allow_html=True,
                     )
     st.markdown('</div>', unsafe_allow_html=True)
-
