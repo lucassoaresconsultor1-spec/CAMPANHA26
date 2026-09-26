@@ -662,39 +662,31 @@ texto_meta = (
 )
 
 st.markdown(
-    f"""
-    <div class="hero-banner">
-        <div class="hero-tag-container">
-            <div class="hero-tag">
-                <span class="status-dot"></span> CENTRO DE COMANDO ELEITORAL 2026
-            </div>
-            <div style="font-size:0.8rem; color:#CBD5E1; font-weight:600;">
-                🔄 Atualizado em {agora}
-            </div>
-        </div>
-        <h1>Painel de Operações de Campo</h1>
-        <p>Monitoramento estratégico de mobilização, territorialidade e base de apoio em tempo real.</p>
-        
-        <div class="countdown-box">
-            <div class="countdown-icon">⏳</div>
-            <div>
-                <div class="countdown-title">Contagem Regressiva · Eleições 04/10/2026</div>
-                <div class="countdown-text">{texto_dias}</div>
-            </div>
-        </div>
-
-        <div class="hero-progress-wrapper">
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; color:#E2E8F0; margin-bottom:8px; font-weight:700;">
-                <span>Progresso da Meta Geral da Campanha</span>
-                <span style="font-weight:800; color:{AMBER}; font-size:1.05rem;">{pct_meta:.0f}%</span>
-            </div>
-            <div style="background:rgba(255,255,255,0.12); border-radius:12px; height:12px; overflow:hidden;">
-                <div style="width:{pct_meta:.0f}%; background:linear-gradient(90deg, {cor_meta} 0%, #34D399 100%); height:100%; border-radius:12px; animation: fillBar 1.1s ease-out; transition: width 0.6s ease;"></div>
-            </div>
-            <div style="font-size:0.82rem; color:#CBD5E1; margin-top:8px; font-weight:500;">{texto_meta}</div>
-        </div>
-    </div>
-    """,
+    f"""<div class="hero-banner">
+<div class="hero-tag-container">
+<div class="hero-tag"><span class="status-dot"></span> CENTRO DE COMANDO ELEITORAL 2026</div>
+<div style="font-size:0.8rem; color:#CBD5E1; font-weight:600;">🔄 Atualizado em {agora}</div>
+</div>
+<h1>Painel de Operações de Campo</h1>
+<p>Monitoramento estratégico de mobilização, territorialidade e base de apoio em tempo real.</p>
+<div class="countdown-box">
+<div class="countdown-icon">⏳</div>
+<div>
+<div class="countdown-title">Contagem Regressiva · Eleições 04/10/2026</div>
+<div class="countdown-text">{texto_dias}</div>
+</div>
+</div>
+<div class="hero-progress-wrapper">
+<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; color:#E2E8F0; margin-bottom:8px; font-weight:700;">
+<span>Progresso da Meta Geral da Campanha</span>
+<span style="font-weight:800; color:{AMBER}; font-size:1.05rem;">{pct_meta:.0f}%</span>
+</div>
+<div style="background:rgba(255,255,255,0.12); border-radius:12px; height:12px; overflow:hidden;">
+<div style="width:{pct_meta:.0f}%; background:linear-gradient(90deg, {cor_meta} 0%, #34D399 100%); height:100%; border-radius:12px; animation: fillBar 1.1s ease-out; transition: width 0.6s ease;"></div>
+</div>
+<div style="font-size:0.82rem; color:#CBD5E1; margin-top:8px; font-weight:500;">{texto_meta}</div>
+</div>
+</div>""",
     unsafe_allow_html=True,
 )
 
