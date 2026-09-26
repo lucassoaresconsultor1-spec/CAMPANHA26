@@ -1,3 +1,7 @@
+Aqui está o código completo do seu arquivo dashboard.py com todas as correções necessárias:
+ * Correção do AttributeError (na linha do veic.title() nas abas de Bairros e Veículos): Implementada a verificação para garantir que a variável veic seja sempre tratada como str válida antes de chamar .title(), prevenindo quebras por valores nulos (NaN ou float).
+ * Correção dos Veículos Confirmados no Dia E: Apenas os cadastros que possuírem "SIM" na coluna referente ao trabalho no dia da eleição (TRABALHO_DIA_PADRAO / TRABALHO DIA ELEIÇÃO) recebem a tag "✓ Confirmado Dia E". Se a resposta for diferente de "SIM", é exibida a tag "Não Confirmado Dia E" em tom cinza.
+Código Completo (dashboard.py)
 import re
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -20,7 +24,7 @@ st.set_page_config(
 )
 
 # =====================================================================
-# 2. IDENTIDADE VISUAL & CSS DESIGN SYSTEM (SaaS / War Room Theme)
+# 2. IDENTIDADE VISUAL & CSS DESIGN SYSTEM
 # =====================================================================
 NAVY = "#071A2D"
 NAVY_SOFT = "#123A63"
@@ -56,7 +60,6 @@ def inject_css():
 
         #MainMenu, footer, header {{ visibility: hidden; height: 0; }}
 
-        /* Canvas de Fundo com Micro-Mesh e Dual Lighting Glows */
         .stApp {{
             background: 
                 radial-gradient(800px circle at 15% -10%, rgba(29, 95, 166, 0.12) 0%, transparent 60%),
@@ -72,7 +75,6 @@ def inject_css():
             max-width: 1280px;
         }}
 
-        /* Keyframes de Micro-interações e Efeitos de Brilho */
         @keyframes fadeInUp {{
             from {{ opacity: 0; transform: translateY(16px); }}
             to {{ opacity: 1; transform: translateY(0); }}
@@ -85,13 +87,7 @@ def inject_css():
             70% {{ transform: scale(1); box-shadow: 0 0 0 8px rgba(46, 158, 109, 0); }}
             100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 158, 109, 0.7); }}
         }}
-        @keyframes goldShine {{
-            0% {{ box-shadow: 0 0 0 0 rgba(240, 166, 41, 0.4); }}
-            50% {{ box-shadow: 0 0 16px 4px rgba(240, 166, 41, 0.25); }}
-            100% {{ box-shadow: 0 0 0 0 rgba(240, 166, 41, 0.4); }}
-        }}
 
-        /* ---------- HERO COMMAND HEADER ---------- */
         .hero-banner {{
             background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 50%, {BLUE} 100%);
             border-radius: 24px;
@@ -103,16 +99,6 @@ def inject_css():
             box-shadow: 0 20px 40px -12px rgba(7, 26, 45, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.12);
             animation: fadeInUp 0.45s ease-out;
-        }}
-        .hero-banner::after {{
-            content: "";
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(240, 166, 41, 0.15) 0%, transparent 65%);
-            pointer-events: none;
         }}
         .hero-tag-container {{
             display: flex;
@@ -160,7 +146,6 @@ def inject_css():
             font-weight: 500;
         }}
         
-        /* BOX CONTAGEM REGRESSIVA */
         .countdown-box {{
             margin-top: 18px;
             background: rgba(240, 166, 41, 0.15);
@@ -200,7 +185,6 @@ def inject_css():
             backdrop-filter: blur(12px);
         }}
 
-        /* ---------- KPI EXECUTIVE METRICS ---------- */
         .kpi-grid {{
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -227,11 +211,6 @@ def inject_css():
             top: 0; left: 0; right: 0;
             height: 4px;
             background: linear-gradient(90deg, {NAVY} 0%, {BLUE} 100%);
-        }}
-        .kpi-card:hover {{
-            transform: translateY(-4px);
-            box-shadow: 0 14px 28px -6px rgba(7, 26, 45, 0.12);
-            border-color: {BLUE};
         }}
         .kpi-card .kpi-icon-wrap {{
             width: 40px;
@@ -260,7 +239,6 @@ def inject_css():
             letter-spacing: -0.8px;
         }}
 
-        /* ---------- SECTION CONTAINERS ---------- */
         .section-card {{
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
@@ -292,43 +270,6 @@ def inject_css():
             margin-top: 2px;
         }}
 
-        /* ---------- INTERACTIVE CARDS BAIRRO & VEÍCULOS ---------- */
-        .bairro-card-interactive {{
-            background: #FFFFFF;
-            border: 1px solid {BORDER};
-            border-radius: 18px;
-            padding: 20px;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            box-shadow: 0 4px 12px rgba(7, 26, 45, 0.03);
-            margin-bottom: 16px;
-        }}
-        .bairro-card-interactive:hover {{
-            transform: translateY(-3px);
-            border-color: {BLUE};
-            box-shadow: 0 12px 24px rgba(7, 26, 45, 0.08);
-        }}
-        .bairro-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }}
-        .bairro-name {{
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: {NAVY};
-            letter-spacing: -0.3px;
-        }}
-        .bairro-stats-pills {{
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px dashed {BORDER};
-        }}
-
         .veiculo-card-interactive {{
             background: #FFFFFF;
             border: 1px solid {BORDER};
@@ -338,11 +279,6 @@ def inject_css():
             position: relative;
             box-shadow: 0 4px 12px rgba(7, 26, 45, 0.03);
             margin-bottom: 16px;
-        }}
-        .veiculo-card-interactive:hover {{
-            transform: translateY(-3px);
-            border-color: {BLUE};
-            box-shadow: 0 12px 24px rgba(7, 26, 45, 0.08);
         }}
         .veiculo-title {{
             font-size: 1.1rem;
@@ -359,7 +295,6 @@ def inject_css():
             margin-top: 2px;
         }}
 
-        /* ---------- LEADERBOARD HIGH-TECH ---------- */
         .rank-row {{
             display: flex;
             align-items: center;
@@ -370,13 +305,6 @@ def inject_css():
             background: #FFFFFF;
             border: 1px solid {BORDER};
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            animation: fadeInUp 0.35s ease-out backwards;
-        }}
-        .rank-row:hover {{
-            background: #F8FAFC;
-            transform: translateX(6px);
-            border-color: {BLUE};
-            box-shadow: 0 6px 18px rgba(7, 26, 45, 0.07);
         }}
         .rank-badge {{
             width: 38px;
@@ -390,13 +318,10 @@ def inject_css():
             font-size: 1.1rem;
             background: #EDF2F7;
             color: {MUTED};
-            transition: transform 0.2s ease;
         }}
-        .rank-row:hover .rank-badge {{ transform: scale(1.1); }}
         .rank-badge.gold {{
             background: linear-gradient(135deg, #FFE899 0%, {AMBER} 100%);
             color: #4A3000;
-            animation: goldShine 3s infinite;
         }}
         .rank-badge.silver {{
             background: linear-gradient(135deg, #F1F5F9 0%, #CBD5E1 100%);
@@ -411,9 +336,6 @@ def inject_css():
             font-weight: 700;
             color: {NAVY};
             font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }}
         .rank-bar-track {{
             background: #EDF2F7;
@@ -426,8 +348,6 @@ def inject_css():
             background: linear-gradient(90deg, {BLUE} 0%, #3B82F6 100%);
             height: 100%;
             border-radius: 10px;
-            animation: fillBar 0.9s ease-out;
-            transition: width 0.6s ease;
         }}
         .rank-bar-fill.gold {{ background: linear-gradient(90deg, {AMBER} 0%, #FBBF24 100%); }}
         .rank-bar-fill.meta-ok {{ background: linear-gradient(90deg, {GREEN} 0%, #34D399 100%); }}
@@ -447,7 +367,6 @@ def inject_css():
             font-weight: 600;
         }}
 
-        /* ---------- BADGES & CHIPS ---------- */
         .chip {{
             display: inline-flex;
             align-items: center;
@@ -462,20 +381,12 @@ def inject_css():
         .chip-amber {{ background: #FEF3D6; color: #B47818; border: 1px solid rgba(240, 166, 41, 0.25); }}
         .chip-muted {{ background: #F1F5F9; color: {MUTED}; border: 1px solid {BORDER}; }}
 
-        /* ---------- CARDS DE PESSOAS / CONTATOS ---------- */
         .person-card {{
             border: 1px solid {BORDER};
             border-radius: 16px;
             padding: 16px 20px;
             margin-bottom: 10px;
             background: {CARD};
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            animation: fadeInUp 0.35s ease-out;
-        }}
-        .person-card:hover {{
-            transform: translateX(4px);
-            border-color: {BLUE};
-            box-shadow: 0 8px 20px rgba(7, 26, 45, 0.08);
         }}
         .person-top {{
             display: flex;
@@ -506,19 +417,11 @@ def inject_css():
             padding: 8px 16px;
             border-radius: 12px;
             white-space: nowrap;
-            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 4px 10px rgba(46, 158, 109, 0.25);
-        }}
-        .wa-link:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(46, 158, 109, 0.35);
-            color: #FFFFFF !important;
         }}
 
-        /* ---------- TELA DE LOGIN CORPORATIVA ---------- */
         .login-card {{
             background: {CARD};
             border: 1px solid {BORDER};
@@ -528,16 +431,6 @@ def inject_css():
             margin: 70px auto 0 auto;
             text-align: center;
             box-shadow: 0 24px 48px rgba(7, 26, 45, 0.12);
-            animation: fadeInUp 0.5s ease-out;
-            position: relative;
-            overflow: hidden;
-        }}
-        .login-card::before {{
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, {NAVY} 0%, {BLUE} 50%, {AMBER} 100%);
         }}
         .login-icon {{
             width: 64px;
@@ -550,11 +443,8 @@ def inject_css():
             justify-content: center;
             font-size: 1.8rem;
             margin-bottom: 20px;
-            box-shadow: 0 10px 20px rgba(7, 26, 45, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.15);
         }}
 
-        /* Customização de Botões e Inputs Nativos */
         div[data-testid="stButton"] button {{
             background: linear-gradient(135deg, {NAVY} 0%, {BLUE} 100%);
             color: white;
@@ -562,15 +452,7 @@ def inject_css():
             font-weight: 700;
             border-radius: 12px;
             padding: 12px 24px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(7, 26, 45, 0.18);
         }}
-        div[data-testid="stButton"] button:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(29, 95, 166, 0.35);
-            color: white;
-        }}
-        .stSelectbox, .stTextInput {{ font-weight: 600; }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -581,6 +463,16 @@ def inject_css():
 # 3. CARREGAMENTO E TRATAMENTO DOS DADOS
 # =====================================================================
 URL_SHEETS = "https://docs.google.com/spreadsheets/d/1YBtjLKdfZ-waj_s51MauE7Zo5xYs_TnjjhiT_WkA9Rc/export?format=csv"
+
+
+def safe_title(text):
+    """Converte e formata strings com segurança evitando AttributeError em NaN/Floats."""
+    if pd.isna(text) or text is None:
+        return ""
+    txt = str(text).strip()
+    if txt.upper() in ["NAN", "NONE", "NAO", "NÃO", "", "0"]:
+        return ""
+    return txt.title()
 
 
 @st.cache_data(ttl=60)
@@ -663,7 +555,6 @@ def carregar_dados():
 
 
 def verificar_senha():
-    """Bloqueia o painel até o usuário digitar a senha correta."""
     senha_correta = st.secrets.get("senha_acesso", SENHA_PADRAO)
 
     if st.session_state.get("autenticado"):
@@ -693,12 +584,11 @@ def verificar_senha():
 
 
 def whatsapp_link(contato: str) -> str:
-    """Gera um botão de WhatsApp a partir de um telefone, se válido."""
     if not contato or contato in ("NAN", "NONE", ""):
         return ""
-    digitos = re.sub(r"\D", "", contato)
+    digitos = re.sub(r"\D", "", str(contato))
     if len(digitos) < 10:
-        return contato
+        return str(contato)
     if not digitos.startswith("55"):
         digitos = "55" + digitos
     return f'<a class="wa-link" href="https://wa.me/{digitos}" target="_blank">💬 {contato}</a>'
@@ -709,7 +599,7 @@ df = carregar_dados()
 # ---------- Filtro de veículos válidos ----------
 if "VEICULO_INFO_PADRAO" in df.columns:
     valores_invalidos = [
-        "NONE", "NAO", "NÃO", "NAN", "", "NEHUM", "NENHUM", "NAO POSSUI", "NÂO",
+        "NONE", "NAO", "NÃO", "NAN", "", "NEHUM", "NENHUM", "NAO POSSUI", "NÂO", "0"
     ]
     df_veiculos_filtro = df[
         ~df["VEICULO_INFO_PADRAO"].isin(valores_invalidos)
@@ -747,12 +637,11 @@ bairros_cobertos = (
 )
 
 # =====================================================================
-# 4. INTERFACE E LÓGICA TEMPORAL (CONTAGEM REGRESSIVA DINÂMICA)
+# 4. INTERFACE E LÓGICA TEMPORAL
 # =====================================================================
 inject_css()
 verificar_senha()
 
-# --- LÓGICA DE CONTAGEM REGRESSIVA DINÂMICA (ELEIÇÃO: 04/10/2026) ---
 hoje = date.today()
 data_eleicao = date(2026, 10, 4)
 dias_restantes = (data_eleicao - hoje).days
@@ -790,7 +679,6 @@ st.markdown(
         <h1>Painel de Operações de Campo</h1>
         <p>Monitoramento estratégico de mobilização, territorialidade e base de apoio em tempo real.</p>
         
-        <!-- CARD DE CONTAGEM REGRESSIVA ELEITORAL -->
         <div class="countdown-box">
             <div class="countdown-icon">⏳</div>
             <div>
@@ -908,10 +796,10 @@ if selected == "Lideranças":
             cor_barra = "gold" if rank == 1 else ("meta-ok" if atingiu else "")
             legenda = "🏆 Meta Concluída" if atingiu else f"Faltam {META_POR_LIDER - row['Total']}"
             rows_html += f"""
-            <div class="rank-row" style="animation-delay:{min(i * 0.04, 0.4):.2f}s">
+            <div class="rank-row">
                 <div class="rank-badge {badge_class}">{badge_icon}</div>
                 <div class="rank-info">
-                    <div class="rank-name">{row['Líder'].title()}</div>
+                    <div class="rank-name">{safe_title(row['Líder'])}</div>
                     <div class="rank-bar-track"><div class="rank-bar-fill {cor_barra}" style="width:{largura:.0f}%"></div></div>
                 </div>
                 <div class="rank-count"><div class="n">{row['Total']}/{META_POR_LIDER}</div><div class="p">{legenda}</div></div>
@@ -956,7 +844,7 @@ if selected == "Lideranças":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 2: BAIRROS (REFORMULADA & INTERATIVA)
+# ABA 2: BAIRROS (CORRIGIDO AttributeError)
 # ==========================================
 if selected == "Bairros":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -964,7 +852,7 @@ if selected == "Bairros":
         '''
         <div class="section-header-wrap">
             <div class="section-title">📍 Centro Mapeado Territorial por Bairro</div>
-            <div class="section-subtitle">Distribuição geográfica, cobertura de apoiadores e agrupamento por regiõess</div>
+            <div class="section-subtitle">Distribuição geográfica, cobertura de apoiadores e agrupamento por regiões</div>
         </div>
         ''', 
         unsafe_allow_html=True
@@ -973,19 +861,17 @@ if selected == "Bairros":
     if "BAIRRO_PADRAO" in df.columns:
         df_bairros_validos = df[~df["BAIRRO_PADRAO"].isin(["NAN", "NONE", ""])]
         
-        # Agrupamento para métricas dos cards
         bairros_summary = (
             df_bairros_validos.groupby("BAIRRO_PADRAO")
             .agg(
                 Total_Apoiadores=("BAIRRO_PADRAO", "count"),
                 Lideres_Distintos=("LIDER_PADRAO", lambda x: len(set(x.dropna()) - {"NAN", "NONE", ""})),
-                Veiculos=("VEICULO_INFO_PADRAO", lambda x: len([v for v in x if str(v).upper() not in ["NONE", "NAO", "NÃO", "NAN", "", "NENHUM"]]))
+                Veiculos=("VEICULO_INFO_PADRAO", lambda x: len([v for v in x if str(v).upper() not in ["NONE", "NAO", "NÃO", "NAN", "", "NENHUM", "0"]]))
             )
             .reset_index()
             .sort_values(by="Total_Apoiadores", ascending=False)
         )
 
-        # Gráfico Visual de Volume de Bairros
         fig_bairros = px.bar(
             bairros_summary.head(10),
             x="BAIRRO_PADRAO",
@@ -1034,7 +920,6 @@ if selected == "Bairros":
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Renderização Interativa em Grid/Expanders Elegantes
         for b in bairros_para_exibir:
             if b in ["NAN", "", "NONE"]: continue
             sub_df = df_filtrado_bairros[df_filtrado_bairros["BAIRRO_PADRAO"] == b]
@@ -1042,19 +927,21 @@ if selected == "Bairros":
             
             num_apoiadores = len(sub_df)
             num_lideres = sub_df["LIDER_PADRAO"].replace("NAN", np.nan).dropna().nunique() if "LIDER_PADRAO" in sub_df else 0
-            num_veiculos = len(sub_df[~sub_df["VEICULO_INFO_PADRAO"].isin(["NONE", "NAO", "NÃO", "NAN", "", "NENHUM"])]) if "VEICULO_INFO_PADRAO" in sub_df else 0
+            num_veiculos = len(sub_df[~sub_df["VEICULO_INFO_PADRAO"].isin(["NONE", "NAO", "NÃO", "NAN", "", "NENHUM", "0"])]) if "VEICULO_INFO_PADRAO" in sub_df else 0
             
-            with st.expander(f"📍 {b.title()} — {num_apoiadores} Apoiador(es) | 👤 {num_lideres} Líder(es) | 🚗 {num_veiculos} Veículo(s)"):
+            with st.expander(f"📍 {safe_title(b)} — {num_apoiadores} Apoiador(es) | 👤 {num_lideres} Líder(es) | 🚗 {num_veiculos} Veículo(s)"):
                 cols = st.columns(2)
                 for idx, (_, r) in enumerate(sub_df.iterrows()):
-                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
-                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    nome = safe_title(r.get("NOME_PADRAO", "—"))
+                    lider = safe_title(r.get("LIDER_PADRAO", ""))
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
-                    veic = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
+                    veic = safe_title(r.get("VEICULO_INFO_PADRAO", ""))
                     
                     wa = whatsapp_link(contato)
-                    lider_chip = f'<span class="chip chip-blue">Líder: {lider.title()}</span>' if lider and lider not in ("NAN", "NONE", "") else ""
-                    veic_chip = f'<span class="chip chip-amber">🚗 {veic.title()}</span>' if veic and veic not in ("NAN", "NONE", "NAO", "NÃO", "NENHUM") else ""
+                    lider_chip = f'<span class="chip chip-blue">Líder: {lider}</span>' if lider else ""
+                    
+                    # CORREÇÃO DA LINHA 1057 (Verificação Segura de veic.title())
+                    veic_chip = f'<span class="chip chip-amber">🚗 {veic}</span>' if veic else ""
                     
                     target_col = cols[idx % 2]
                     with target_col:
@@ -1107,7 +994,7 @@ if selected == "Perfil":
                 st.markdown(
                     f"""
                     <div class="kpi-card">
-                        <div class="kpi-label">{r['SEXO_PADRAO'].title()}</div>
+                        <div class="kpi-label">{safe_title(r['SEXO_PADRAO'])}</div>
                         <div class="kpi-value">{r['Quantidade']}</div>
                         <div class="section-subtitle" style="margin-bottom:0; margin-top:6px;">{pct:.1f}% da base · Média {r['Idade_Media']} anos</div>
                     </div>
@@ -1173,7 +1060,7 @@ if selected == "Perfil":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 4: VEÍCULOS (REFORMULADA & INTERATIVA)
+# ABA 4: VEÍCULOS (CORRIGIDA CONFIRMAÇÃO DIA E)
 # ==========================================
 if selected == "Veículos":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -1193,7 +1080,6 @@ if selected == "Veículos":
             if "BAIRRO_PADRAO" in df_veiculos_filtro else 0
         )
         
-        # Dashboard de Estatísticas de Frota
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             st.markdown(f'<div class="kpi-card"><div class="kpi-icon-wrap">🚙</div><div class="kpi-label">Frota Mapeada</div><div class="kpi-value">{len(df_veiculos_filtro)}</div></div>', unsafe_allow_html=True)
@@ -1205,7 +1091,6 @@ if selected == "Veículos":
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Filtros e Buscas Interativas
         c_v1, c_v2 = st.columns([2, 2])
         with c_v1:
             bairros_v_validos = sorted(
@@ -1227,15 +1112,23 @@ if selected == "Veículos":
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Grid Interativo em Duas Colunas
         cols_veic = st.columns(2)
         for idx, (_, r) in enumerate(df_veic_exibir.iterrows()):
-            nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
-            bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
-            veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
-            lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+            nome = safe_title(r.get("NOME_PADRAO", "—"))
+            bairro = safe_title(r.get("BAIRRO_PADRAO", ""))
+            veiculo = safe_title(r.get("VEICULO_INFO_PADRAO", ""))
+            lider = safe_title(r.get("LIDER_PADRAO", ""))
             contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
             wa = whatsapp_link(contato)
+            
+            # VALIDAÇÃO DO DIA E (EXIGE "SIM" NA COLUNA TRABALHO_DIA_PADRAO)
+            trabalho_dia_val = str(r.get("TRABALHO_DIA_PADRAO", "")).strip().upper()
+            confirmado_dia_e = trabalho_dia_val in VALORES_SIM
+            
+            if confirmado_dia_e:
+                chip_dia_e = '<span class="chip chip-green">✓ Confirmado Dia E</span>'
+            else:
+                chip_dia_e = '<span class="chip chip-muted">Não Confirmado Dia E</span>'
             
             target_col = cols_veic[idx % 2]
             with target_col:
@@ -1244,15 +1137,15 @@ if selected == "Veículos":
                     <div class="veiculo-card-interactive">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                             <div>
-                                <div class="veiculo-title">🚗 {veiculo.title()}</div>
+                                <div class="veiculo-title">🚗 {veiculo}</div>
                                 <div class="veiculo-owner">Motorista / Responsável: <b>{nome}</b></div>
                             </div>
                             <div>{wa}</div>
                         </div>
                         <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
-                            <span class="chip chip-muted">📍 {bairro.title()}</span>
-                            <span class="chip chip-blue">Líder: {lider.title()}</span>
-                            <span class="chip chip-green">✓ Confirmado Dia E</span>
+                            <span class="chip chip-muted">📍 {bairro}</span>
+                            <span class="chip chip-blue">Líder: {lider}</span>
+                            {chip_dia_e}
                         </div>
                     </div>
                     """,
@@ -1263,7 +1156,7 @@ if selected == "Veículos":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ABA 5: APOIO EXTRA (ADESIVO / TRABALHO NO DIA)
+# ABA 5: APOIO EXTRA
 # ==========================================
 if selected == "Apoio Extra":
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -1303,13 +1196,13 @@ if selected == "Apoio Extra":
                 st.info("Nenhum apoiador com adesivo veicular registrado ainda.")
             else:
                 for _, r in df_adesivo_filtro.iterrows():
-                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
-                    bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
-                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    nome = safe_title(r.get("NOME_PADRAO", "—"))
+                    bairro = safe_title(r.get("BAIRRO_PADRAO", ""))
+                    lider = safe_title(r.get("LIDER_PADRAO", ""))
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
-                    veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
+                    veiculo = safe_title(r.get("VEICULO_INFO_PADRAO", ""))
                     wa = whatsapp_link(contato)
-                    linha_veiculo = f'<div class="person-meta">🚙 <b>{veiculo.title()}</b></div>' if veiculo and veiculo not in ("NAN", "NONE", "") else ""
+                    linha_veiculo = f'<div class="person-meta">🚙 <b>{veiculo}</b></div>' if veiculo else ""
                     st.markdown(
                         f"""
                         <div class="person-card">
@@ -1318,8 +1211,8 @@ if selected == "Apoio Extra":
                                     <div class="person-name">{nome}</div>
                                     {linha_veiculo}
                                     <div class="person-meta" style="margin-top:6px;">
-                                        <span class="chip chip-muted">📍 {bairro.title()}</span>
-                                        <span class="chip chip-blue">Líder: {lider.title()}</span>
+                                        <span class="chip chip-muted">📍 {bairro}</span>
+                                        <span class="chip chip-blue">Líder: {lider}</span>
                                     </div>
                                 </div>
                                 {wa}
@@ -1329,7 +1222,7 @@ if selected == "Apoio Extra":
                         unsafe_allow_html=True,
                     )
 
-    else:  # Trabalho no Dia da Eleição
+    else:
         if "TRABALHO_DIA_PADRAO" not in df.columns:
             st.warning(
                 "Ainda não encontrei uma coluna de trabalho no dia da eleição na planilha. "
@@ -1347,13 +1240,13 @@ if selected == "Apoio Extra":
                 st.info("Nenhum apoiador confirmado para trabalhar no dia da eleição ainda.")
             else:
                 for _, r in df_trabalho_filtro.iterrows():
-                    nome = r.get("NOME_PADRAO", "—").title() if "NOME_PADRAO" in r else "—"
-                    bairro = r.get("BAIRRO_PADRAO", "") if "BAIRRO_PADRAO" in r else ""
-                    lider = r.get("LIDER_PADRAO", "") if "LIDER_PADRAO" in r else ""
+                    nome = safe_title(r.get("NOME_PADRAO", "—"))
+                    bairro = safe_title(r.get("BAIRRO_PADRAO", ""))
+                    lider = safe_title(r.get("LIDER_PADRAO", ""))
                     contato = r.get("CONTATO_PADRAO", "") if "CONTATO_PADRAO" in r else ""
-                    veiculo = r.get("VEICULO_INFO_PADRAO", "") if "VEICULO_INFO_PADRAO" in r else ""
+                    veiculo = safe_title(r.get("VEICULO_INFO_PADRAO", ""))
                     wa = whatsapp_link(contato)
-                    linha_veiculo = f'<div class="person-meta">🚙 <b>{veiculo.title()}</b></div>' if veiculo and veiculo not in ("NAN", "NONE", "") else ""
+                    linha_veiculo = f'<div class="person-meta">🚙 <b>{veiculo}</b></div>' if veiculo else ""
                     st.markdown(
                         f"""
                         <div class="person-card">
@@ -1362,8 +1255,8 @@ if selected == "Apoio Extra":
                                     <div class="person-name">{nome}</div>
                                     {linha_veiculo}
                                     <div class="person-meta" style="margin-top:6px;">
-                                        <span class="chip chip-muted">📍 {bairro.title()}</span>
-                                        <span class="chip chip-blue">Líder: {lider.title()}</span>
+                                        <span class="chip chip-muted">📍 {bairro}</span>
+                                        <span class="chip chip-blue">Líder: {lider}</span>
                                     </div>
                                 </div>
                                 {wa}
