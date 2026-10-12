@@ -13,6 +13,15 @@ import pandas as pd
 from processamento import NAO_INFORMADO, fmt_dec, fmt_int
 
 
+SENSIVEL = False  # muda pelo botão VISÍVEL/RESTRITO do painel
+
+LINKS = [
+    ("Painel Carona Amiga", "Corridas do dia", "https://projcaronaamiga.netlify.app/painel.html", "carro"),
+    ("Onde eu voto", "Busca por seção", "https://projlocaldevotacao.netlify.app/", "urna"),
+    ("Mapa de escolas", "Locais da zona", "https://mapa2026.streamlit.app/", "mapa"),
+]
+
+
 def esc(v) -> str:
     if v is None:
         return ""
@@ -56,6 +65,7 @@ _ICONES = {
     "urna": '<path d="M4 11h16v9H4zM8 11V4h8v7M10 7h4"/>',
     "busca": '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>',
     "info": '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    "link": '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>',
     "mapa": '<path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16"/>',
 }
 
@@ -89,13 +99,27 @@ header[data-testid="stHeader"],#MainMenu,footer,[data-testid="stToolbar"],[data-
 .stButton>button p,.stDownloadButton>button p,[data-testid="stFormSubmitButton"] button p{font-weight:800 !important;color:#FFFFFF !important}
 .st-key-sair button,.st-key-atualizar button{background:rgba(13,32,74,.62) !important;border:1px solid var(--borda2) !important;box-shadow:none !important}
 [data-testid="stForm"]{background:rgba(13,32,74,.62);border:1px solid var(--borda) !important;border-radius:22px;padding:22px 20px}
-div[data-testid="stRadio"] div[role="radiogroup"]{flex-wrap:nowrap !important;overflow-x:auto;gap:8px;padding:2px 2px 8px;scrollbar-width:none}
+div[data-testid="stRadio"] div[role="radiogroup"]{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;overflow-x:auto;gap:8px !important;padding:2px 2px 8px;scrollbar-width:none;width:100%}
 div[data-testid="stRadio"] div[role="radiogroup"]::-webkit-scrollbar{display:none}
-div[data-testid="stRadio"] div[role="radiogroup"]>label{flex-shrink:0;margin:0 !important;padding:0 18px;min-height:44px;display:flex;align-items:center;border-radius:14px;background:rgba(13,32,74,.62);border:1px solid var(--borda);cursor:pointer}
-div[data-testid="stRadio"] div[role="radiogroup"]>label>div:first-child{display:none}
-div[data-testid="stRadio"] div[role="radiogroup"]>label:has(input:checked){background:#2563EB;border-color:transparent;box-shadow:0 6px 18px rgba(37,99,235,.4)}
-div[data-testid="stRadio"] div[role="radiogroup"]>label p{font-weight:700 !important;font-size:13.5px !important;color:var(--sua) !important;white-space:nowrap}
-div[data-testid="stRadio"] div[role="radiogroup"]>label:has(input:checked) p{color:#FFFFFF !important}
+div[data-testid="stRadio"] div[role="radiogroup"] label{flex:0 0 auto !important;width:auto !important;max-width:none !important;margin:0 !important;padding:0 18px !important;min-height:44px;display:flex !important;align-items:center;border-radius:14px;background:rgba(13,32,74,.62);border:1px solid var(--borda);cursor:pointer}
+div[data-testid="stRadio"] div[role="radiogroup"] label>div:not(:last-child),div[data-testid="stRadio"] div[role="radiogroup"] label>span:not(:last-child){display:none !important}
+div[data-testid="stRadio"] div[role="radiogroup"] label input{position:absolute;opacity:0;width:1px;height:1px}
+div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked){background:#2563EB;border-color:transparent;box-shadow:0 6px 18px rgba(37,99,235,.4)}
+div[data-testid="stRadio"] div[role="radiogroup"] label *{white-space:nowrap !important;word-break:normal !important;overflow-wrap:normal !important}
+div[data-testid="stRadio"] div[role="radiogroup"] label p{margin:0 !important;font-weight:700 !important;font-size:13.5px !important;color:var(--sua) !important}
+div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{color:#FFFFFF !important}
+.stToggle label p,[data-testid="stToggle"] label p,.stCheckbox label p{color:var(--sua) !important;font-weight:700 !important}
+.cv-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.cv-link{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;border-radius:16px;background:var(--painel);border:1px solid var(--borda2);color:var(--txt) !important;min-width:0}
+.cv-link:hover{border-color:#3B82F6;background:rgba(37,99,235,.22)}
+.cv-link b{font-size:12.5px;font-weight:800;line-height:1.2}
+.cv-link small{font-size:10.5px;color:var(--mut);font-weight:600}
+.cv-link-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.16);color:#7DD3FC}
+@media(min-width:768px){.cv-link{flex-direction:row;align-items:center;gap:12px;padding:14px 16px}.cv-link b{font-size:14px}}
+.cv-demo{font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:999px;background:rgba(251,191,36,.14);color:#FCD34D;border:1px solid rgba(251,191,36,.35)}
+.cv-wa-mini{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#16A34A;color:#FFFFFF !important;display:inline-flex;align-items:center;justify-content:center}
+.cv-wa-mini::before{content:"";width:15px;height:15px;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.cv-nome-l{display:flex;align-items:center;gap:8px;min-width:0}
 .cv{color:var(--txt);font-family:var(--fb);font-size:14px;line-height:1.35}
 .cv *{box-sizing:border-box}
 .cv a{color:inherit;text-decoration:none}
@@ -326,6 +350,13 @@ def whats(link: str, nome: str = "") -> str:
     return '<span class="cv-wa i-wa off" title="Sem WhatsApp válido"></span>'
 
 
+def _wa_mini(link: str, nome: str) -> str:
+    if not link:
+        return ""
+    return (f'<a class="cv-wa-mini i-wa" href="{esc(link)}" target="_blank" rel="noopener" '
+            f'aria-label="WhatsApp do líder {esc(nome)}"></a>')
+
+
 def iniciais(nome: str) -> str:
     partes = [p for p in str(nome).split() if p[:1].isalpha()]
     if not partes:
@@ -347,6 +378,14 @@ def secao(titulo: str, subtitulo: str = "", chips: list | None = None) -> str:
 
 def nota(txt_html: str, tipo: str = "", icone: str = "info") -> str:
     return f'<div class="cv"><div class="cv-nota {tipo}">{ic(icone)}<div>{txt_html}</div></div></div>'
+
+
+def selo_sigilo(visivel: bool) -> str:
+    if visivel:
+        return ('<div class="cv"><div class="cv-nota al">' + ic("alerta") + '<div><b>VISÍVEL</b> · CPF, título, '
+                'nascimento e telefone aparecem completos na tela e nos relatórios. Desligue ao terminar.</div></div></div>')
+    return ('<div class="cv"><div class="cv-chips">' + chip("RESTRITO · dados sensíveis protegidos", "ok", "escudo")
+            + '</div></div>')
 
 
 def vazio(msg: str) -> str:
@@ -411,15 +450,15 @@ def login_card(modo: str, aviso: str | None = None, erro_config: bool = False) -
 
 
 def cabecalho(agora_txt: str, modo: str, contagem: dict, avisos: list) -> str:
-    faixa = ""
-    if modo == "demo":
-        faixa += f'<div class="cv-faixa">{ic("info")}Modo demonstração · todos os dados são fictícios</div>'
+    faixa = '<div class="cv-links">' + "".join(
+        f'<a class="cv-link" href="{esc(u)}" target="_blank" rel="noopener"><span class="cv-link-ico">{ic(i)}</span>'
+        f'<span><b>{esc(t)}</b><br><small>{esc(st)}</small></span></a>' for t, st, u, i in LINKS) + "</div>"
     for a in avisos:
         faixa += f'<div class="cv-faixa">{ic("alerta")}{esc(a)}</div>'
     return f"""<div class="cv">
 <div class="cv-topo">
 <div class="cv-marca"><span class="cv-logo">{ic("escudo", "g")}</span><span><b>Campanha 2026</b><small>Centro de Comando</small></span></div>
-<div class="cv-status"><span class="cv-dot"></span>{esc(agora_txt)}</div>
+<div style="display:flex;align-items:center;gap:6px">{'<span class="cv-demo">DEMO</span>' if modo == "demo" else ""}<div class="cv-status"><span class="cv-dot"></span>{esc(agora_txt)}</div></div>
 </div>
 {faixa}
 <div class="cv-hero">
@@ -465,6 +504,8 @@ def pessoa(p, detalhe_html: str = "", chips_html: str = "", icone: str = "pin") 
 
 def _detalhe_local(p) -> str:
     partes = [esc(p.BAIRRO)]
+    if SENSIVEL and p.TEL_FMT:
+        partes.append(esc(p.TEL_FMT))
     if p.SECAO:
         partes.append(f"Seção {esc(p.SECAO)}")
     if pd.notna(p.DATA):
@@ -503,7 +544,7 @@ def lista_lideres(lideres: list, abrir_lid: set, abrir_mult: set, dup_linhas: se
         blocos.append(
             f'<details class="cv-lid"{" open" if lid["key"] in abrir_lid else ""}><summary>'
             f'<span class="cv-row"><span class="cv-rank {classe_rank(lid["pos"])}">{lid["pos"]}</span>'
-            f'<span class="cv-info"><span class="cv-over">Líder</span><span class="cv-nome">{esc(lid["nome"])}</span>'
+            f'<span class="cv-info"><span class="cv-over">Líder</span><span class="cv-nome-l"><span class="cv-nome">{esc(lid["nome"])}</span>{_wa_mini(lid.get("wa", ""), lid["nome"])}</span>'
             f'<span class="cv-sub">{lid["n_mult"]} multiplicadores · {lid["na_meta"]} na meta</span></span>'
             f'<span class="cv-tot"><b>{fmt_int(lid["total"])}</b><small>de {fmt_int(lid["meta"])}</small></span>{ic("chev", "cv-chev g")}</span>'
             f'<span class="cv-prog">{barra(lid["pct"], "ok" if lid["pct"] >= 100 else "")}<b>{lid["pct"]}%</b></span>'
@@ -754,11 +795,14 @@ def card_duplicata(g: dict) -> str:
         quando = pd.Timestamp(p.DATA).strftime("%d/%m/%Y %H:%M") if pd.notna(p.DATA) else "sem data"
         docs = []
         if p.CPF:
-            docs.append("CPF " + (f"***.{p.CPF[3:6]}.{p.CPF[6:9]}-**" if len(p.CPF) == 11 else "inválido"))
+            if SENSIVEL:
+                docs.append("CPF " + (f"{p.CPF[:3]}.{p.CPF[3:6]}.{p.CPF[6:9]}-{p.CPF[9:]}" if len(p.CPF) == 11 else p.CPF))
+            else:
+                docs.append("CPF " + (f"***.{p.CPF[3:6]}.{p.CPF[6:9]}-**" if len(p.CPF) == 11 else "inválido"))
         if p.TITULO:
-            docs.append("Título ••••" + p.TITULO[-4:])
+            docs.append("Título " + (p.TITULO if SENSIVEL else "••••" + p.TITULO[-4:]))
         if p.TEL_FMT:
-            docs.append(p.TEL_FMT)
+            docs.append(p.TEL_FMT if SENSIVEL else f"{p.TEL_FMT[:5]} 9••••-{p.TEL_FMT[-4:]}" if len(p.TEL_FMT) > 9 else p.TEL_FMT)
         nasc = p.NASC.strftime("%d/%m/%Y") if p.NASC is not None and not pd.isna(p.NASC) else ""
         if i == 0:
             selo = chip("1º cadastro", "ok", "check", True)

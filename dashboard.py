@@ -193,20 +193,21 @@ def parametros_dados(modo: str) -> tuple:
 
 
 @st.cache_data(ttl=C.TTL_DADOS_SEG, show_spinner=False)
-def arquivos_liderancas(parametros: tuple):
+def arquivos_liderancas(parametros: tuple, sensivel: bool):
     d = carregar(*parametros)
-    return R.excel_liderancas(d["lideres"]), R.pdf_liderancas(d["lideres"])
+    return R.excel_liderancas(d["lideres"], sensivel), R.pdf_liderancas(d["lideres"], sensivel)
 
 
 @st.cache_data(ttl=C.TTL_DADOS_SEG, show_spinner=False)
-def arquivos_veiculos(parametros: tuple):
+def arquivos_veiculos(parametros: tuple, sensivel: bool):
     v = carregar(*parametros)["veiculos"]
-    return R.excel_veiculos(v["df"], v["por_bairro"]), R.pdf_veiculos(v["df"], v["por_bairro"])
+    return (R.excel_veiculos(v["df"], v["por_bairro"], sensivel),
+            R.pdf_veiculos(v["df"], v["por_bairro"], sensivel))
 
 
 @st.cache_data(ttl=C.TTL_DADOS_SEG, show_spinner=False)
-def arquivo_apoios(parametros: tuple):
-    return R.excel_apoios(carregar(*parametros)["base"]["cadastros"])
+def arquivo_apoios(parametros: tuple, sensivel: bool):
+    return R.excel_apoios(carregar(*parametros)["base"]["cadastros"], sensivel)
 
 
 # ---------------------------------------------------------------------------
@@ -485,7 +486,7 @@ def aba_relatorios(d: dict, parametros: tuple):
             ["Resumo das lideranças e metas", "Multiplicadores em ordem decrescente", "Lista completa de cadastros",
              "Uma aba por líder (Excel)"], "users"))
         with st.spinner("Gerando arquivos…"):
-            x, p = arquivos_liderancas(parametros)
+            x, p = arquivos_liderancas(parametros, ui.SENSIVEL)
         botao_download("Baixar Excel", x, f"cadastros_por_lideranca_{hoje}.xlsx", xlsx, "dl_lid_x")
         botao_download("Baixar PDF", p, f"cadastros_por_lideranca_{hoje}.pdf", "application/pdf", "dl_lid_p")
     with col2:
@@ -494,7 +495,7 @@ def aba_relatorios(d: dict, parametros: tuple):
             ["Motorista, modelo, cor e placa", "WhatsApp, líder e multiplicador", "Quem confirmou o dia da eleição",
              "Quem tem adesivo"], "carro"))
         with st.spinner("Gerando arquivos…"):
-            x, p = arquivos_veiculos(parametros)
+            x, p = arquivos_veiculos(parametros, ui.SENSIVEL)
         botao_download("Baixar Excel", x, f"veiculos_por_bairro_{hoje}.xlsx", xlsx, "dl_vei_x")
         botao_download("Baixar PDF", p, f"veiculos_por_bairro_{hoje}.pdf", "application/pdf", "dl_vei_p")
     with col3:
@@ -502,10 +503,16 @@ def aba_relatorios(d: dict, parametros: tuple):
             "Listas de apoio extra", "Uma aba para cada tipo de apoio, organizada por bairro.",
             ["Adesivo veicular", "Bandeiras", "Trabalho no dia da eleição", "Com WhatsApp para contato"], "bandeira"))
         with st.spinner("Gerando arquivo…"):
-            x = arquivo_apoios(parametros)
+            x = arquivo_apoios(parametros, ui.SENSIVEL)
         botao_download("Baixar Excel", x, f"apoio_extra_{hoje}.xlsx", xlsx, "dl_apo_x")
-    html(ui.nota("Os relatórios não trazem CPF nem título de eleitor completos, para reduzir o risco caso um arquivo "
-                 "seja repassado. Guarde e compartilhe só com quem precisa.", "al", "escudo"))
+    if ui.SENSIVEL:
+        html(ui.nota("<b>Dados sensíveis VISÍVEIS:</b> os arquivos saem com CPF, título, nascimento e WhatsApp completos. "
+                     "Não repasse em grupos. Para gerar a versão protegida, volte o botão lá em cima para RESTRITO.",
+                     "al", "alerta"))
+    else:
+        html(ui.nota("<b>Modo RESTRITO:</b> os arquivos saem sem CPF, título e nascimento, e com o WhatsApp mascarado "
+                     "(ex.: (22) 9••••-3456). Para a versão completa, ligue o botão de dados sensíveis lá em cima.",
+                     "", "escudo"))
     html(ui.tabela_resumo(d["lideres"]))
 
 
@@ -528,7 +535,14 @@ def main():
         st.stop()
 
     topo(d, modo)
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    try:
+        visivel = st.toggle("Mostrar dados sensíveis (VISÍVEL)", key="sensivel", value=False,
+                            help="Desligado = RESTRITO: CPF, título, nascimento e telefone ficam mascarados "
+                                 "na tela e nos relatórios.")
+    except AttributeError:  # Streamlit muito antigo
+        visivel = st.checkbox("Mostrar dados sensíveis (VISÍVEL)", key="sensivel", value=False)
+    ui.SENSIVEL = bool(visivel)
+    html(ui.selo_sigilo(ui.SENSIVEL))
     aba = st.radio("Seções do painel", ABAS, horizontal=True, key="aba", label_visibility="collapsed")
 
     if aba == "Lideranças":

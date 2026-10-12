@@ -32,6 +32,26 @@ def _sim(v) -> str:
     return "Sim" if bool(v) else ""
 
 
+def mascarar_tel(t: str) -> str:
+    """(22) 90012-3456 -> (22) 9••••-3456"""
+    t = str(t or "")
+    d = re.sub(r"\D", "", t)
+    if len(d) < 8:
+        return t
+    return f"({d[:2]}) {'9' if len(d) == 11 else ''}••••-{d[-4:]}"
+
+
+def _tel(t, sensivel: bool) -> str:
+    return t if sensivel else mascarar_tel(t)
+
+
+def _nasc(n) -> str:
+    try:
+        return n.strftime("%d/%m/%Y") if n is not None and not pd.isna(n) else ""
+    except (AttributeError, ValueError):
+        return ""
+
+
 # ---------------------------------------------------------------------------
 # Excel
 # ---------------------------------------------------------------------------
@@ -70,23 +90,28 @@ def _nome_aba(texto: str, usados: set) -> str:
     return nome
 
 
-def _linhas_pessoas(lideres: list) -> pd.DataFrame:
+def _linhas_pessoas(lideres: list, sensivel: bool = False) -> pd.DataFrame:
     linhas = []
     for lid in lideres:
         for pos_m, m in enumerate(lid["mults"], start=1):
             for p in m["pessoas"].itertuples():
-                linhas.append({
+                linha = {
                     "Pos. líder": lid["pos"], "Líder": lid["nome"], "Pos. multiplicador": pos_m,
-                    "Multiplicador": m["nome"], "Nome": p.NOME, "WhatsApp": p.TEL_FMT, "Bairro": p.BAIRRO,
-                    "Seção": p.SECAO, "Local de votação": p.LOCAL, "Data do cadastro": _data_fmt(p.DATA),
-                    "Linha na planilha": p.LINHA,
-                })
-    return pd.DataFrame(linhas, columns=["Pos. líder", "Líder", "Pos. multiplicador", "Multiplicador", "Nome",
-                                         "WhatsApp", "Bairro", "Seção", "Local de votação", "Data do cadastro",
-                                         "Linha na planilha"])
+                    "Multiplicador": m["nome"], "Nome": p.NOME, "WhatsApp": _tel(p.TEL_FMT, sensivel),
+                    "Bairro": p.BAIRRO, "Seção": p.SECAO, "Local de votação": p.LOCAL,
+                    "Data do cadastro": _data_fmt(p.DATA), "Linha na planilha": p.LINHA,
+                }
+                if sensivel:
+                    linha.update({"CPF": p.CPF, "Título": p.TITULO, "Nascimento": _nasc(p.NASC)})
+                linhas.append(linha)
+    colunas = ["Pos. líder", "Líder", "Pos. multiplicador", "Multiplicador", "Nome", "WhatsApp", "Bairro", "Seção",
+               "Local de votação", "Data do cadastro", "Linha na planilha"]
+    if sensivel:
+        colunas += ["CPF", "Título", "Nascimento"]
+    return pd.DataFrame(linhas, columns=colunas)
 
 
-def excel_liderancas(lideres: list) -> bytes:
+def excel_liderancas(lideres: list, sensivel: bool = False) -> bytes:
     resumo = pd.DataFrame([{
         "Posição": lid["pos"], "Líder": lid["nome"], "Multiplicadores": lid["n_mult"],
         "Cadastros": lid["total"], "Meta": lid["meta"], "% da meta": lid["pct"],
@@ -96,9 +121,9 @@ def excel_liderancas(lideres: list) -> bytes:
         "Pos. líder": lid["pos"], "Líder": lid["nome"], "Multiplicador": m["nome"], "Cadastros": m["total"],
         "Meta": m["meta"], "% da meta": m["pct"],
         "Situação": "Meta batida" if m["ok"] else ("Parado" if m["parado"] else f"Faltam {m['meta'] - m['total']}"),
-        "Dias sem cadastrar": "" if m["dias_sem"] is None else m["dias_sem"], "WhatsApp": m["tel"],
+        "Dias sem cadastrar": "" if m["dias_sem"] is None else m["dias_sem"], "WhatsApp": _tel(m["tel"], sensivel),
     } for lid in lideres for m in lid["mults"]])
-    pessoas = _linhas_pessoas(lideres)
+    pessoas = _linhas_pessoas(lideres, sensivel)
 
     buf = BytesIO()
     with _escritor(buf) as w:
@@ -112,22 +137,22 @@ def excel_liderancas(lideres: list) -> bytes:
     return buf.getvalue()
 
 
-def _df_veiculos(v: pd.DataFrame, ordem_bairros: list) -> pd.DataFrame:
+def _df_veiculos(v: pd.DataFrame, ordem_bairros: list, sensivel: bool = False) -> pd.DataFrame:
     pos = {b: i for i, b in enumerate(ordem_bairros)}
     v = v.assign(_o=v["BAIRRO"].map(pos)).sort_values(["_o", "NOME"])
     return pd.DataFrame({
         "Bairro": v["BAIRRO"], "Motorista": v["NOME"], "Modelo": v["MODELO"], "Cor": v["COR"],
-        "Placa": v["PLACA"], "WhatsApp": v["TEL_FMT"], "Líder": v["LIDER"], "Multiplicador": v["MULT"],
+        "Placa": v["PLACA"], "WhatsApp": v["TEL_FMT"].map(lambda t: _tel(t, sensivel)), "Líder": v["LIDER"], "Multiplicador": v["MULT"],
         "Dia da eleição": v["DIA_E"].map(_sim), "Adesivo": v["ADESIVO"].map(_sim),
         "Seção": v["SECAO"], "Linha na planilha": v["LINHA"],
     })
 
 
-def excel_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame) -> bytes:
+def excel_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame, sensivel: bool = False) -> bytes:
     ordem = list(por_bairro["bairro"])
     resumo = por_bairro.rename(columns={"bairro": "Bairro", "total": "Veículos"})
     resumo.insert(0, "Posição", range(1, len(resumo) + 1))
-    tabela = _df_veiculos(v, ordem)
+    tabela = _df_veiculos(v, ordem, sensivel)
     buf = BytesIO()
     with _escritor(buf) as w:
         _planilha(w, resumo, "Por bairro")
@@ -135,11 +160,11 @@ def excel_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame) -> bytes:
     return buf.getvalue()
 
 
-def excel_apoios(cad: pd.DataFrame) -> bytes:
+def excel_apoios(cad: pd.DataFrame, sensivel: bool = False) -> bytes:
     def tabela(df):
         df = df.sort_values(["BAIRRO", "NOME"])
         return pd.DataFrame({
-            "Nome": df["NOME"], "WhatsApp": df["TEL_FMT"], "Bairro": df["BAIRRO"], "Líder": df["LIDER"],
+            "Nome": df["NOME"], "WhatsApp": df["TEL_FMT"].map(lambda t: _tel(t, sensivel)), "Bairro": df["BAIRRO"], "Líder": df["LIDER"],
             "Multiplicador": df["MULT"], "Veículo": (df["MODELO"] + " " + df["COR"]).str.strip(),
             "Placa": df["PLACA"], "Seção": df["SECAO"],
         })
@@ -203,7 +228,7 @@ def _doc(buf, titulo, paisagem=False):
     return doc, rodape, gerado
 
 
-def pdf_liderancas(lideres: list) -> bytes:
+def pdf_liderancas(lideres: list, sensivel: bool = False) -> bytes:
     buf = BytesIO()
     doc, rodape, gerado = _doc(buf, "Cadastros por liderança")
     largura = doc.width
@@ -233,7 +258,7 @@ def pdf_liderancas(lideres: list) -> bytes:
             if m["total"] == 0:
                 hist.append(KeepTogether([cab, Paragraph("Nenhum cadastro.", _ST_SUB)]))
                 continue
-            linhas = [[i, p.NOME, p.TEL_FMT, p.BAIRRO, p.SECAO,
+            linhas = [[i, p.NOME, _tel(p.TEL_FMT, sensivel), p.BAIRRO, p.SECAO,
                        pd.Timestamp(p.DATA).strftime("%d/%m/%y") if pd.notna(p.DATA) else ""]
                       for i, p in enumerate(m["pessoas"].itertuples(), start=1)]
             t = _tabela(["#", "Nome", "WhatsApp", "Bairro", "Seção", "Cadastro"], linhas,
@@ -245,7 +270,7 @@ def pdf_liderancas(lideres: list) -> bytes:
     return buf.getvalue()
 
 
-def pdf_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame) -> bytes:
+def pdf_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame, sensivel: bool = False) -> bytes:
     buf = BytesIO()
     doc, rodape, gerado = _doc(buf, "Gestão de veículos por bairro", paisagem=True)
     largura = doc.width
@@ -262,7 +287,7 @@ def pdf_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame) -> bytes:
     for i, r in enumerate(por_bairro.itertuples(), start=1):
         sub = v[v.BAIRRO.eq(r.bairro)].sort_values("NOME")
         cab = Paragraph(escape(f"{i}º · {r.bairro} — {r.total} veículo(s)"), _ST_H1)
-        linhas = [[p.NOME, p.MODELO, p.COR, p.PLACA, p.TEL_FMT, p.LIDER, p.MULT, _sim(p.DIA_E), _sim(p.ADESIVO)]
+        linhas = [[p.NOME, p.MODELO, p.COR, p.PLACA, _tel(p.TEL_FMT, sensivel), p.LIDER, p.MULT, _sim(p.DIA_E), _sim(p.ADESIVO)]
                   for p in sub.itertuples()]
         t = _tabela(["Motorista", "Modelo", "Cor", "Placa", "WhatsApp", "Líder", "Multiplicador", "Dia E",
                      "Adesivo"], linhas,

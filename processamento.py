@@ -243,8 +243,9 @@ MAPA_RESPOSTAS = [
 ]
 MAPA_EQUIPE = [
     ("MULTIPLICADOR", ["MULTIPLICADOR", "NOME"], ["LIDER"]),
-    ("LIDER", ["LIDER", "LIDERANCA"], []),
-    ("CONTATO", ["WHATSAPP", "CELULAR", "TELEFONE", "CONTATO"], []),
+    ("CONTATO_LIDER", ["WHATSAPPDOLIDER", "TELEFONEDOLIDER", "CELULARDOLIDER", "CONTATODOLIDER", "WHATSAPPLIDER"], []),
+    ("LIDER", ["LIDER", "LIDERANCA"], ["WHATSAPP", "TELEFONE", "CELULAR", "CONTATO"]),
+    ("CONTATO", ["WHATSAPP", "CELULAR", "TELEFONE", "CONTATO"], ["LIDER"]),
 ]
 MAPA_SECOES = [
     ("SECAO", ["SECAO", "NUMERO"], []),
@@ -321,14 +322,23 @@ def preparar(brutos: dict, hoje: date | None = None) -> dict:
             if not m:
                 continue
             tel = normalizar_telefone(r[eq_map["CONTATO"]]) if "CONTATO" in eq_map else ""
+            tel_l = normalizar_telefone(r[eq_map["CONTATO_LIDER"]]) if "CONTATO_LIDER" in eq_map else ""
             equipe_rows.append({"MULT": m, "MULT_KEY": chave(m), "LIDER": lid or SEM_LIDER,
                                 "LIDER_KEY": chave(lid) or chave(SEM_LIDER), "WA": link_whatsapp(tel),
-                                "TEL_FMT": telefone_formatado(tel)})
+                                "TEL_FMT": telefone_formatado(tel), "LIDER_WA": link_whatsapp(tel_l)})
     elif len(eq_raw):
         avisos.append("A aba EQUIPE precisa das colunas Multiplicador e Líder.")
     else:
         avisos.append("Aba EQUIPE não encontrada ou vazia: os líderes vêm só do formulário.")
-    equipe = pd.DataFrame(equipe_rows, columns=["MULT", "MULT_KEY", "LIDER", "LIDER_KEY", "WA", "TEL_FMT"])
+    equipe = pd.DataFrame(equipe_rows, columns=["MULT", "MULT_KEY", "LIDER", "LIDER_KEY", "WA", "TEL_FMT", "LIDER_WA"])
+    # WhatsApp do líder: coluna própria na EQUIPE ou a linha em que o líder é o próprio multiplicador
+    wa_lider = {}
+    for r in equipe.itertuples():
+        if r.LIDER_WA and r.LIDER_KEY not in wa_lider:
+            wa_lider[r.LIDER_KEY] = r.LIDER_WA
+    for r in equipe.itertuples():
+        if r.MULT_KEY == r.LIDER_KEY and r.WA and r.LIDER_KEY not in wa_lider:
+            wa_lider[r.LIDER_KEY] = r.WA
     equipe = equipe.drop_duplicates("MULT_KEY", keep="first").reset_index(drop=True)
     mult_info = {r.MULT_KEY: r for r in equipe.itertuples()}
 
@@ -488,6 +498,7 @@ def preparar(brutos: dict, hoje: date | None = None) -> dict:
         "mapa_colunas": mapa,
         "avisos": avisos,
         "fora_equipe": fora,
+        "wa_lider": wa_lider,
         "hoje": hoje,
     }
 
@@ -532,7 +543,7 @@ def ranking_liderancas(base: dict, meta: int = META_POR_MULTIPLICADOR, dias_para
         total = sum(x["total"] for x in mults)
         meta_l = len(mults) * meta
         lideres.append({
-            "nome": d["nome"], "key": lk, "mults": mults, "total": total, "meta": meta_l,
+            "nome": d["nome"], "key": lk, "mults": mults, "wa": base.get("wa_lider", {}).get(lk, ""), "total": total, "meta": meta_l,
             "pct": round(total / meta_l * 100) if meta_l else 0,
             "n_mult": len(mults), "na_meta": sum(1 for x in mults if x["ok"]),
             "parados": sum(1 for x in mults if x["parado"]),

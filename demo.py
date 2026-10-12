@@ -200,6 +200,7 @@ def gerar_demo(seed=2026, hoje=None):
     usados_nomes, usados_tel = set(), set()
     equipe, plano = [], []
     for i_lider, lider in enumerate(LIDERES):
+        tel_lider = _telefone(rng, usados_tel)
         n_mult = rng.randint(5, 10)
         for j in range(n_mult):
             if lider == "Bebeto" and j < 3:
@@ -211,7 +212,8 @@ def gerar_demo(seed=2026, hoje=None):
                     if nome_mult not in usados_nomes:
                         break
             usados_nomes.add(nome_mult)
-            equipe.append({"Multiplicador": nome_mult, "Líder": lider, "WhatsApp": _telefone(rng, usados_tel)})
+            equipe.append({"Multiplicador": nome_mult, "Líder": lider, "WhatsApp": _telefone(rng, usados_tel),
+                           "WhatsApp do líder": tel_lider})
 
             r = rng.random()
             if r < 0.10:
@@ -343,7 +345,7 @@ def gerar_demo(seed=2026, hoje=None):
 
     return {
         "respostas": respostas,
-        "equipe": pd.DataFrame(equipe, columns=["Multiplicador", "Líder", "WhatsApp"]),
+        "equipe": pd.DataFrame(equipe, columns=["Multiplicador", "Líder", "WhatsApp", "WhatsApp do líder"]),
         "bairros": pd.DataFrame({"Bairro": [b for b, _ in BAIRROS]}),
         "secoes": pd.DataFrame(secoes, columns=["Seção", "Local de votação", "Bairro", "Link do mapa"]),
     }
