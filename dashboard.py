@@ -29,7 +29,7 @@ C = P = R = S = ui = _Modulo()
 from datetime import date
 
 # ---- Regras da campanha -------------------------------------------------
-VERSAO = "1.2"
+VERSAO = "1.3"
 META_POR_MULTIPLICADOR = 15          # meta de cadastros de cada multiplicador
 DATA_ELEICAO = date(2026, 10, 4)      # usada na contagem regressiva
 DIAS_PARADO = 7                       # sem cadastro há X dias = "parado"
@@ -667,6 +667,25 @@ def serie_semanal(cad: pd.DataFrame, hoje: date, semanas: int = 8) -> list:
         n = int(((datas >= ini) & (datas <= fim)).sum())
         out.append({"ini": ini, "fim": fim, "n": n, "rotulo": ini.strftime("%d/%m")})
     return out
+
+
+def serie_campanha(cad: pd.DataFrame, hoje: date, maximo: int = 52) -> list:
+    """Série semanal desde o primeiro cadastro (no mínimo 8 semanas, no máximo `maximo`)."""
+    datas = cad["DATA"].dropna()
+    if datas.empty:
+        return serie_semanal(cad, hoje)
+    semanas = (hoje - datas.min().date()).days // 7 + 1
+    return serie_semanal(cad, hoje, max(8, min(semanas, maximo)))
+
+
+def ritmo_recente(cad: pd.DataFrame, hoje: date, dias: int = 14, n: int = 10) -> list:
+    """Multiplicadores que mais cadastraram nos últimos `dias` dias."""
+    recentes = cad[cad["DATA"].notna() & (cad["DATA"].dt.date > hoje - timedelta(days=dias))]
+    if recentes.empty:
+        return []
+    cont = recentes.groupby(["MULT", "LIDER"]).size().reset_index(name="total")
+    cont = cont.sort_values(["total", "MULT"], ascending=[False, True]).head(n)
+    return [{"nome": r.MULT, "lider": r.LIDER, "total": int(r.total)} for r in cont.itertuples()]
 
 
 # ---------------------------------------------------------------------------
@@ -1541,10 +1560,14 @@ import pandas as pd
 
 SENSIVEL = False  # muda pelo botão VISÍVEL/RESTRITO do painel
 
+# Outras ferramentas da campanha (abrem em nova aba): título, para que serve, endereço, ícone, cor.
 LINKS = [
-    ("Painel Carona Amiga", "Corridas do dia", "https://projcaronaamiga.netlify.app/painel.html", "carro"),
-    ("Onde eu voto", "Busca por seção", "https://projlocaldevotacao.netlify.app/", "urna"),
-    ("Mapa de escolas", "Locais da zona", "https://mapa2026.streamlit.app/", "mapa"),
+    ("Carona Amiga", "Central de caronas: pedidos, motoristas e corridas do dia.",
+     "https://projcaronaamiga.netlify.app/painel.html", "carro", "verde"),
+    ("Onde eu voto", "O eleitor digita a seção e recebe o local com rota no mapa.",
+     "https://projlocaldevotacao.netlify.app/", "urna", "azul"),
+    ("Mapa de escolas", "Todos os locais de votação da zona no mapa.",
+     "https://mapa2026.streamlit.app/", "mapa", "ambar"),
 ]
 
 
@@ -1629,6 +1652,7 @@ div[data-testid="stRadio"] div[role="radiogroup"]{display:flex !important;flex-d
 div[data-testid="stRadio"] div[role="radiogroup"]::-webkit-scrollbar{display:none}
 div[data-testid="stRadio"] div[role="radiogroup"] label{flex:0 0 auto !important;width:auto !important;max-width:none !important;margin:0 !important;padding:0 18px !important;min-height:44px;display:flex !important;align-items:center;border-radius:14px;background:rgba(13,32,74,.62);border:1px solid var(--borda);cursor:pointer}
 div[data-testid="stRadio"] div[role="radiogroup"] label>div:not(:last-child),div[data-testid="stRadio"] div[role="radiogroup"] label>span:not(:last-child){display:none !important}
+div[data-testid="stRadio"] div[role="radiogroup"] label>div>div:not([data-testid="stMarkdownContainer"]){display:none !important}
 div[data-testid="stRadio"] div[role="radiogroup"] label input{position:absolute;opacity:0;width:1px;height:1px}
 div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked){background:#2563EB;border-color:transparent;box-shadow:0 6px 18px rgba(37,99,235,.4)}
 div[data-testid="stRadio"] div[role="radiogroup"] label *{white-space:nowrap !important;word-break:normal !important;overflow-wrap:normal !important}
@@ -1642,6 +1666,23 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-link small{font-size:10.5px;color:var(--mut);font-weight:600}
 .cv-link-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.16);color:#7DD3FC}
 @media(min-width:768px){.cv-link{flex-direction:row;align-items:center;gap:12px;padding:14px 16px}.cv-link b{font-size:14px}}
+.cv-tools-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;margin:18px 0 8px}
+.cv-tools-h .cv-over{display:inline-flex;align-items:center;gap:6px;color:var(--sua)}
+.cv-tools-n{font-size:11.5px;color:var(--mut);font-weight:600}
+.cv-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+@media(min-width:768px){.cv-tools{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+.cv-tool{--c:#38BDF8;--cf:rgba(56,189,248,.16);display:flex;align-items:center;gap:12px;min-height:76px;padding:14px;border-radius:18px;background:linear-gradient(135deg,var(--cf),rgba(13,32,74,.62) 70%);border:1px solid var(--borda2);border-left:4px solid var(--c);color:var(--txt) !important;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.cv-tool:hover{transform:translateY(-2px);border-color:var(--c);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.cv-tool:focus-visible{outline:2px solid #7DD3FC;outline-offset:3px}
+.cv-tool.verde{--c:#4ADE80;--cf:rgba(34,197,94,.18)}.cv-tool.azul{--c:#60A5FA;--cf:rgba(59,130,246,.22)}.cv-tool.ambar{--c:#FCD34D;--cf:rgba(251,191,36,.16)}
+.cv-tool-ico{width:46px;height:46px;flex-shrink:0;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--cf);color:var(--c)}
+.cv-tool-txt{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cv-tool{flex-wrap:wrap}
+.cv-tool-btn{margin-left:auto}
+@media(min-width:768px) and (max-width:1099px){.cv-tool-ico{width:40px;height:40px}.cv-tool-btn{width:100%;justify-content:center}}
+.cv-tool-txt b{font-family:var(--fd);font-size:16px;font-weight:700}
+.cv-tool-txt small{font-size:12px;color:var(--sua);line-height:1.35}
+.cv-tool-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:12px;background:var(--c);color:#04112B;font-weight:800;font-size:13px}
 .cv-demo{font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:999px;background:rgba(251,191,36,.14);color:#FCD34D;border:1px solid rgba(251,191,36,.35)}
 .cv-wa-mini{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#16A34A;color:#FFFFFF !important;display:inline-flex;align-items:center;justify-content:center}
 .cv-wa-mini::before{content:"";width:15px;height:15px;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
@@ -1761,6 +1802,19 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-pi::before{content:"";width:12px;height:12px;flex-shrink:0;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
 .cv-wa.off{background:rgba(148,163,184,.16);color:var(--mut) !important}
 .cv-wa-l{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;background:#16A34A;color:#FFFFFF !important;font-weight:800;font-size:13px}
+.cv-cobrar{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;background:#16A34A;color:#FFFFFF !important;font-weight:800;font-size:13px}
+.cv-cobrar::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.cv-cobrar:hover{background:#15803D}
+.cv-cobrar.off{background:rgba(148,163,184,.14);color:var(--mut) !important;font-size:11.5px;padding:0 10px}
+.cv-cobrar.off::before{display:none}
+.cv-busca-r{display:flex;flex-direction:column;gap:8px;margin:4px 0 16px}
+.st-key-barra_topo{margin-top:10px}
+.st-key-barra_topo [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;gap:8px !important;justify-content:flex-end}
+.st-key-barra_topo [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important;min-width:0 !important}
+.st-key-barra_topo .stButton>button{min-height:44px;padding:0 18px}
+.st-key-barra_topo .stButton,.st-key-barra_topo [data-testid="stButton"]{width:100% !important}
+.cv-marca b{white-space:nowrap}
+@media(max-width:640px){.st-key-barra_topo [data-testid="stColumn"]{flex:1 1 0 !important}}
 .cv-mais{display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:12px;border:1px dashed rgba(125,170,255,.35);color:var(--sua);font-size:12.5px;font-weight:700}
 .cv-top-l{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .cv-top{display:flex;align-items:center;gap:12px;min-width:0}
@@ -1908,9 +1962,9 @@ def nota(txt_html: str, tipo: str = "", icone: str = "info") -> str:
 
 def selo_sigilo(visivel: bool) -> str:
     if visivel:
-        return ('<div class="cv"><div class="cv-nota al">' + ic("alerta") + '<div><b>VISÍVEL</b> · CPF, título, '
+        return ('<div class="cv"><div class="cv-nota al">' + ic("alerta") + '<div><b>DADOS VISÍVEIS</b> · CPF, título, '
                 'nascimento e telefone aparecem completos na tela e nos relatórios. Desligue ao terminar.</div></div></div>')
-    return ('<div class="cv"><div class="cv-chips">' + chip("RESTRITO · dados sensíveis protegidos", "ok", "escudo")
+    return ('<div class="cv"><div class="cv-chips">' + chip("PROTEGIDO · CPF, título e telefone mascarados", "ok", "escudo")
             + '</div></div>')
 
 
@@ -1975,21 +2029,34 @@ def login_card(modo: str, aviso: str | None = None, erro_config: bool = False) -
             f'<div class="cv-h1" style="font-size:28px;margin-top:6px">Campanha 2026</div>{corpo}</div></div>')
 
 
-def cabecalho(agora_txt: str, modo: str, contagem: dict, avisos: list) -> str:
-    faixa = '<div class="cv-links">' + "".join(
-        f'<a class="cv-link" href="{esc(u)}" target="_blank" rel="noopener"><span class="cv-link-ico">{ic(i)}</span>'
-        f'<span><b>{esc(t)}</b><br><small>{esc(st)}</small></span></a>' for t, st, u, i in LINKS) + "</div>"
-    for a in avisos:
-        faixa += f'<div class="cv-faixa">{ic("alerta")}{esc(a)}</div>'
-    return f"""<div class="cv">
-<div class="cv-topo">
+def marca(agora_txt: str, modo: str) -> str:
+    return f"""<div class="cv"><div class="cv-topo">
 <div class="cv-marca"><span class="cv-logo">{ic("escudo", "g")}</span><span><b>Campanha 2026</b><small>Centro de Comando</small></span></div>
 <div style="display:flex;align-items:center;gap:6px">{'<span class="cv-demo">DEMO</span>' if modo == "demo" else ""}<div class="cv-status"><span class="cv-dot"></span>{esc(agora_txt)}</div></div>
-</div>
+</div></div>"""
+
+
+def ferramentas() -> str:
+    """Atalhos para as outras ferramentas: grandes, coloridos e com aviso de que abrem em nova aba."""
+    cards = "".join(
+        f'<a class="cv-tool {cor}" href="{url_segura(u)}" target="_blank" rel="noopener noreferrer" '
+        f'aria-label="Abrir {esc(t)} em uma nova aba">'
+        f'<span class="cv-tool-ico">{ic(i, "g")}</span>'
+        f'<span class="cv-tool-txt"><b>{esc(t)}</b><small>{esc(desc)}</small></span>'
+        f'<span class="cv-tool-btn">Abrir{ic("link", "p")}</span></a>'
+        for t, desc, u, i, cor in LINKS)
+    return (f'<div class="cv"><div class="cv-tools-h"><span class="cv-over">{ic("link", "p")} Outras ferramentas da campanha</span>'
+            f'<span class="cv-tools-n">Abrem em uma nova aba · o painel continua aberto aqui</span></div>'
+            f'<div class="cv-tools">{cards}</div></div>')
+
+
+def cabecalho(contagem: dict, avisos: list) -> str:
+    faixa = "".join(f'<div class="cv-faixa">{ic("alerta")}{esc(a)}</div>' for a in avisos)
+    return f"""<div class="cv">
 {faixa}
 <div class="cv-hero">
 <div><div class="cv-h1" role="heading" aria-level="1">Painel de Operações</div><div class="cv-lead">Base de apoiadores atualizada em tempo real</div></div>
-<div class="cv-card cv-cont"><span class="cv-cont-ico">{ic("relogio", "g")}</span>
+<div class="cv-card cv-cont"><span class="cv-cont-ico">{ic(contagem.get("icone", "relogio"), "g")}</span>
 <span><span class="cv-over">{esc(contagem["rotulo"])}</span><b>{esc(contagem["texto"])}</b></span>
 <span class="cv-cont-num">{esc(contagem["numero"])}</span></div>
 </div>
@@ -2080,6 +2147,25 @@ def lista_lideres(lideres: list, abrir_lid: set, abrir_mult: set, dup_linhas: se
     return f'<div class="cv"><div class="cv-lista">{"".join(blocos)}</div></div>'
 
 
+def mensagem_cobranca(m: dict) -> str:
+    """Texto pronto (editável no WhatsApp) para retomar o contato com um multiplicador parado."""
+    primeiro = str(m["nome"]).split()[0] if str(m["nome"]).split() else ""
+    if m["total"] == 0:
+        return (f"Oi {primeiro}, tudo bem? Aqui é da coordenação da campanha. Ainda não apareceu nenhum cadastro seu "
+                f"no painel. Precisa de ajuda com o formulário? Me chama que eu te explico!")
+    falta = max(m["meta"] - m["total"], 0)
+    return (f"Oi {primeiro}, tudo bem? Aqui é da coordenação da campanha. Você já tem {m['total']} de {m['meta']} "
+            f"cadastros no painel, faltam só {falta}! Bora retomar? Qualquer dúvida me chama.")
+
+
+def botao_cobrar(m: dict) -> str:
+    if not m["wa"]:
+        return '<span class="cv-cobrar off" title="Sem WhatsApp válido na aba EQUIPE">Sem WhatsApp</span>'
+    link = f'{m["wa"]}?text={quote(mensagem_cobranca(m))}'
+    return (f'<a class="cv-cobrar i-wa" href="{esc(link)}" target="_blank" rel="noopener noreferrer" '
+            f'aria-label="Cobrar {esc(m["nome"])} pelo WhatsApp com mensagem pronta">Cobrar</a>')
+
+
 def card_parados(parados: list, limite: int = 10) -> str:
     if not parados:
         corpo = f'<div class="cv-meta" style="margin-top:10px">{ic("check")}Nenhum multiplicador parado. Equipe toda ativa!</div>'
@@ -2089,16 +2175,17 @@ def card_parados(parados: list, limite: int = 10) -> str:
             quando = "sem cadastros" if m["total"] == 0 or m["dias_sem"] is None else f"há {m['dias_sem']} dias"
             itens.append(f'<div class="cv-top"><span class="cv-av" style="background:rgba(251,191,36,.16);color:#FCD34D">{esc(iniciais(m["nome"]))}</span>'
                          f'<span class="cv-info"><b>{esc(m["nome"])}</b><span class="cv-sub">Líder {esc(m["lider"])} · {m["total"]}/{m["meta"]} · {quando}</span></span>'
-                         f'{whats(m["wa"], m["nome"])}</div>')
+                         f'{botao_cobrar(m)}</div>')
         resto = len(parados) - limite
         mais = f'<div class="cv-mais">e mais {resto} multiplicador{"es" if resto > 1 else ""}</div>' if resto > 0 else ""
         corpo = f'<div class="cv-top-l">{"".join(itens)}{mais}</div>'
     return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-cab"><span class="cv-titulo">Precisam de atenção</span>'
             f'{chip(str(len(parados)) + " parados", "al" if parados else "ok", "alerta" if parados else "check")}</div>'
-            f'<div class="cv-sec-s" style="margin-top:4px">Sem cadastro há 7 dias ou mais e abaixo da meta.</div>{corpo}</div></div>')
+            f'<div class="cv-sec-s" style="margin-top:4px">Sem cadastro há 7 dias ou mais e abaixo da meta. '
+            f'<b>Cobrar</b> abre o WhatsApp com uma mensagem pronta, que você pode editar antes de enviar.</div>{corpo}</div></div>')
 
 
-def card_top(mults: list, titulo: str = "Top 10 multiplicadores") -> str:
+def card_top(mults: list, titulo: str = "Top 10 multiplicadores", rotulo: str = "campanha toda") -> str:
     itens = []
     for i, m in enumerate(mults, start=1):
         itens.append(f'<div class="cv-top"><span class="cv-av {classe_rank(i)}">{i}</span>'
@@ -2106,7 +2193,7 @@ def card_top(mults: list, titulo: str = "Top 10 multiplicadores") -> str:
                      f'<span class="cv-num">{m["total"]}</span></div>')
     corpo = "".join(itens) or '<div class="cv-meta">Sem cadastros ainda.</div>'
     return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-cab"><span class="cv-titulo">{esc(titulo)}</span>'
-            f'<span class="cv-over">campanha toda</span></div><div class="cv-top-l">{corpo}</div></div></div>')
+            f'<span class="cv-over">{esc(rotulo)}</span></div><div class="cv-top-l">{corpo}</div></div></div>')
 
 
 def card_semanal(serie: list, titulo: str = "Histórico de cadastros") -> str:
@@ -2124,6 +2211,30 @@ def card_semanal(serie: list, titulo: str = "Histórico de cadastros") -> str:
             f'{chip("Média " + fmt_dec(media, 0) + "/semana", "az")}</div>'
             f'<div class="cv-sec-s">por semana · últimas {len(serie)} semanas · linha tracejada = média</div>'
             f'<div class="cv-cols">{linha_media}{cols}</div><div class="cv-rot">{rot}</div></div></div>')
+
+
+def card_acumulado(serie: list, total: int, meta: int) -> str:
+    """Total acumulado ao fim de cada semana, com a linha da meta."""
+    vals = [s["n"] for s in serie]
+    inicial = max(total - sum(vals), 0)  # cadastros anteriores à janela (ou sem data)
+    acum, soma = [], inicial
+    for v in vals:
+        soma += v
+        acum.append(soma)
+    teto = max([meta] + acum) or 1
+    altura = 120
+    cols = "".join(
+        f'<div class="cv-colx{" hi" if i == len(acum) - 1 else ""}"><span>{fmt_int(a)}</span>'
+        f'<i style="height:{max(3, a / teto * altura):.0f}px;background:{"#22C55E" if meta and a >= meta else ""}"></i></div>'
+        for i, a in enumerate(acum))
+    rot = "".join(f'<span>{esc(s["rotulo"])}</span>' for s in serie)
+    linha_meta = (f'<div class="cv-media" style="bottom:{meta / teto * altura:.0f}px;border-top-color:rgba(74,222,128,.7)">'
+                  f'<span style="background:rgba(22,163,74,.7)">Meta {fmt_int(meta)}</span></div>') if meta else ""
+    pct = total / meta * 100 if meta else 0
+    return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-cab"><span class="cv-titulo">Total acumulado</span>'
+            f'{chip(f"{pct:.0f}% da meta", "ok" if pct >= 100 else "az")}</div>'
+            f'<div class="cv-sec-s">quanto a base somava ao fim de cada semana · linha verde = meta</div>'
+            f'<div class="cv-cols">{linha_meta}{cols}</div><div class="cv-rot">{rot}</div></div></div>')
 
 
 # ---------------------------------------------------------------------------
@@ -2395,7 +2506,7 @@ st.set_page_config(
 )
 
 FUSO = ZoneInfo("America/Sao_Paulo")
-ABAS = ["Lideranças", "Bairros", "Perfil", "Veículos", "Apoio Extra", "Duplicatas", "Relatórios"]
+ABAS = ["Lideranças", "Histórico", "Bairros", "Perfil", "Veículos", "Apoio Extra", "Duplicatas", "Relatórios"]
 LIMITE_CARDS = 120
 
 
@@ -2529,6 +2640,8 @@ def carregar(modo: str, hoje_iso: str, planilha_id: str, abas_json: str, cred_js
         "base": base,
         "lideres": lideres,
         "semanal": P.serie_semanal(base["cadastros"], hoje),
+        "semanal_todo": P.serie_campanha(base["cadastros"], hoje),
+        "ritmo": P.ritmo_recente(base["cadastros"], hoje),
         "bairros": P.resumo_bairros(base),
         "perfil": P.perfil(base),
         "aniversariantes": P.aniversariantes(base["cadastros"], hoje),
@@ -2578,7 +2691,7 @@ def arquivo_apoios(parametros: tuple, sensivel: bool):
 # ---------------------------------------------------------------------------
 # Topo
 # ---------------------------------------------------------------------------
-def contagem_regressiva(hoje) -> dict:
+def contagem_regressiva(hoje, total: int = 0, semanal_todo: list | None = None) -> dict:
     dias = (C.DATA_ELEICAO - hoje).days
     rotulo = f"Contagem · Eleição {C.DATA_ELEICAO.strftime('%d/%m/%Y')}"
     if dias > 1:
@@ -2587,8 +2700,37 @@ def contagem_regressiva(hoje) -> dict:
         return {"rotulo": rotulo, "texto": "Falta 1 dia!", "numero": "1"}
     if dias == 0:
         return {"rotulo": rotulo, "texto": "É hoje! Dia da eleição", "numero": "0"}
-    n = abs(dias)
-    return {"rotulo": rotulo, "texto": f"Realizada há {n} dia{'s' if n > 1 else ''}", "numero": str(n)}
+    # Depois da eleição o cartão vira um balanço da campanha.
+    melhor = max(semanal_todo or [], key=lambda s: s["n"], default=None)
+    texto = "cadastros na campanha"
+    if melhor and melhor["n"]:
+        texto += f" · melhor semana {melhor['rotulo']} ({P.fmt_int(melhor['n'])})"
+    return {"rotulo": f"Balanço · eleição de {C.DATA_ELEICAO.strftime('%d/%m/%Y')}", "texto": texto,
+            "numero": P.fmt_int(total), "icone": "trofeu"}
+
+
+def barra_topo(modo: str):
+    """Marca, horário e as ações principais (atualizar e sair) sempre no alto."""
+    agora = datetime.now(FUSO).strftime("%d/%m · %H:%M")
+    html(ui.marca(agora, modo))
+    with st.container(key="barra_topo"):
+        c_atualizar, c_sair = st.columns(2)
+        with c_atualizar:
+            if st.button("↻ Atualizar", key="atualizar", help="Busca agora os cadastros mais recentes da planilha"):
+                limpar_caches()
+                st.rerun()
+        with c_sair:
+            if st.button("Sair", key="sair", help="Fecha o painel neste aparelho"):
+                for k in list(st.session_state.keys()):
+                    del st.session_state[k]
+                st.rerun()
+
+
+def limpar_caches():
+    carregar.clear()
+    arquivos_liderancas.clear()
+    arquivos_veiculos.clear()
+    arquivo_apoios.clear()
 
 
 def topo(d: dict, modo: str):
@@ -2602,8 +2744,8 @@ def topo(d: dict, modo: str):
     semanal = d["semanal"]
     resumo_b, _ = d["bairros"]
     v = d["veiculos"]
-    agora = datetime.now(FUSO).strftime("%d/%m · %H:%M")
-    html(ui.cabecalho(agora, modo, contagem_regressiva(hoje), base["avisos"]))
+    html(ui.cabecalho(contagem_regressiva(hoje, total, d["semanal_todo"]), base["avisos"]))
+    html(ui.ferramentas())
 
     vals = [s["n"] for s in semanal]
     kpi_html = "".join([
@@ -2664,7 +2806,85 @@ def aba_liderancas(d: dict):
     with col2:
         html(ui.card_parados(parados))
         html(ui.card_top(top))
-        html(ui.card_semanal(d["semanal"]))
+        html(ui.nota("O gráfico de cadastros por semana agora fica na aba <b>Histórico</b>.", "", "grafico"))
+
+
+def busca_geral(d: dict, limite: int = 30):
+    """Busca rápida em toda a base: nome, bairro, multiplicador, líder ou telefone."""
+    busca = st.text_input("Buscar apoiador", key="busca_geral",
+                          placeholder="Buscar apoiador por nome, bairro, multiplicador, líder ou telefone…",
+                          help="Procura em todos os cadastros. Apague o texto para fechar os resultados.")
+    termo = P.chave(busca)
+    if not termo:
+        return
+    cad = d["base"]["cadastros"]
+    achou = (cad["NOME_KEY"].str.contains(termo, regex=False, na=False)
+             | cad["BAIRRO_KEY"].str.contains(termo, regex=False, na=False)
+             | cad["MULT"].map(P.chave).str.contains(termo, regex=False, na=False)
+             | cad["LIDER"].map(P.chave).str.contains(termo, regex=False, na=False))
+    digitos = P.so_digitos(busca)
+    if len(digitos) >= 4:
+        achou |= cad["TEL"].str.contains(digitos, regex=False, na=False)
+    res = cad[achou].sort_values("NOME")
+    chips = [ui.chip(f"{P.fmt_int(len(res))} encontrado{'s' if len(res) != 1 else ''}", "az" if len(res) else "al", "busca")]
+    if len(res) > limite:
+        chips.append(ui.chip(f"mostrando {limite}: refine a busca", "", "info"))
+    html(ui.secao(f"Resultado para “{busca.strip()}”", "", chips))
+    if res.empty:
+        html(ui.vazio("Ninguém encontrado. Confira a grafia ou tente só parte do nome."))
+        return
+    cartoes = "".join(
+        ui.pessoa(p, ui._detalhe_local(p),
+                  f'<span class="cv-chips">{ui.chip("Mult. " + p.MULT, "az", None, True)}{ui.chip("Líder " + p.LIDER, "", None, True)}</span>')
+        for p in res.head(limite).itertuples())
+    html(f'<div class="cv"><div class="cv-busca-r">{cartoes}</div></div>')
+
+
+def aba_historico(d: dict):
+    serie = d["semanal_todo"]
+    vals = [s["n"] for s in serie]
+    total = len(d["base"]["cadastros"])
+    meta = sum(l["meta"] for l in d["lideres"])
+    hoje = d["base"]["hoje"]
+    esta, anterior = (vals[-1] if vals else 0), (vals[-2] if len(vals) > 1 else 0)
+    media = sum(vals) / len(vals) if vals else 0
+    melhor = max(serie, key=lambda s: s["n"], default=None)
+    falta = max(meta - total, 0)
+
+    if anterior:
+        var = (esta - anterior) / anterior * 100
+        comp = f'<span class="{"cv-c-verde" if var >= 0 else "cv-c-ambar"}">{"+" if var >= 0 else ""}{var:.0f}% vs. anterior</span>'
+    else:
+        comp = '<span>sem semana anterior</span>'
+    if falta == 0:
+        meta_txt, meta_val = "meta batida!", "✓"
+    elif (C.DATA_ELEICAO - hoje).days > 0:
+        semanas = max(1, -(-(C.DATA_ELEICAO - hoje).days // 7))
+        meta_txt, meta_val = f"≈ {P.fmt_int(-(-falta // semanas))} por semana até a eleição", P.fmt_int(falta)
+    else:
+        meta_txt, meta_val = "ficaram faltando", P.fmt_int(falta)
+
+    html(ui.secao("Histórico de cadastros",
+                  "Como a base cresceu semana a semana. Use para ver o ritmo da equipe e comparar períodos.",
+                  [ui.chip(f"{len(serie)} semanas", "az", "grafico"),
+                   ui.chip(f"Média {P.fmt_dec(media, 0)}/semana", "", "estrela")]))
+    html(ui.kpis([
+        ui.kpi("Esta semana", P.fmt_int(esta), "grafico", comp, "cv-c-ciano"),
+        ui.kpi("Média semanal", P.fmt_dec(media, 0), "relogio", f"em {len(serie)} semanas", "cv-c-azul"),
+        ui.kpi("Melhor semana", P.fmt_int(melhor["n"]) if melhor else "—", "trofeu",
+               f"semana de {ui.esc(melhor['rotulo'])}" if melhor else "", "cv-c-ambar"),
+        ui.kpi("Para a meta", meta_val, "estrela", meta_txt, "cv-c-verde"),
+    ]))
+    col1, col2 = st.columns([1.75, 1], gap="large")
+    with col1:
+        janela = serie[-16:]  # mais que isso espreme as colunas no celular
+        html(ui.card_semanal(janela, "Cadastros por semana"))
+        html(ui.card_acumulado(janela, total, meta))
+    with col2:
+        html(ui.card_top(d["ritmo"], "Em ritmo agora", "últimos 14 dias") if d["ritmo"] else
+             ui.vazio("Nenhum cadastro nos últimos 14 dias."))
+        html(ui.nota("<b>Em ritmo agora</b> mostra quem mais cadastrou nos <b>últimos 14 dias</b>. "
+                     "É um bom termômetro de quem está engajado neste momento.", "", "info"))
 
 
 def aba_bairros(d: dict):
@@ -2899,19 +3119,27 @@ def main():
                      f"{ui.esc(str(erro)[:200])}</small>", "al", "alerta"))
         st.stop()
 
+    barra_topo(modo)
     topo(d, modo)
+    rotulo_sensivel = "Mostrar CPF, título, nascimento e telefone completos"
+    ajuda_sensivel = ("Desligado (recomendado): esses dados ficam mascarados na tela e nos relatórios. "
+                      "Ligue só quando precisar e desligue ao terminar.")
     try:
-        visivel = st.toggle("Mostrar dados sensíveis (VISÍVEL)", key="sensivel", value=False,
-                            help="Desligado = RESTRITO: CPF, título, nascimento e telefone ficam mascarados "
-                                 "na tela e nos relatórios.")
+        visivel = st.toggle(rotulo_sensivel, key="sensivel", value=False, help=ajuda_sensivel)
     except AttributeError:  # Streamlit muito antigo
-        visivel = st.checkbox("Mostrar dados sensíveis (VISÍVEL)", key="sensivel", value=False)
+        visivel = st.checkbox(rotulo_sensivel, key="sensivel", value=False, help=ajuda_sensivel)
     ui.SENSIVEL = bool(visivel)
     html(ui.selo_sigilo(ui.SENSIVEL))
-    aba = st.radio("Seções do painel", ABAS, horizontal=True, key="aba", label_visibility="collapsed")
+    busca_geral(d)
+
+    contadores = {"Duplicatas": len(d["duplicatas"]), "Veículos": d["veiculos"]["total"]}
+    aba = st.radio("Seções do painel", ABAS, horizontal=True, key="aba", label_visibility="collapsed",
+                   format_func=lambda a: f"{a} ({P.fmt_int(contadores[a])})" if contadores.get(a) else a)
 
     if aba == "Lideranças":
         aba_liderancas(d)
+    elif aba == "Histórico":
+        aba_historico(d)
     elif aba == "Bairros":
         aba_bairros(d)
     elif aba == "Perfil":
@@ -2926,19 +3154,6 @@ def main():
         aba_relatorios(d, parametros)
 
     html(ui.rodape(modo, d["carregado"], C.VERSAO))
-    b1, b2 = st.columns(2)
-    with b1:
-        if st.button("Atualizar dados agora", key="atualizar"):
-            carregar.clear()
-            arquivos_liderancas.clear()
-            arquivos_veiculos.clear()
-            arquivo_apoios.clear()
-            st.rerun()
-    with b2:
-        if st.button("Sair do painel", key="sair"):
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.rerun()
 
 
 main()
