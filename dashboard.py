@@ -29,7 +29,7 @@ C = P = R = S = ui = _Modulo()
 from datetime import date
 
 # ---- Regras da campanha -------------------------------------------------
-VERSAO = "1.5"
+VERSAO = "1.6"
 
 # ---- Autoria (aparece só na tela de login do MODO DEMONSTRAÇÃO) -----------
 AUTOR = "Lucas Soares"
@@ -1608,14 +1608,37 @@ SENSIVEL = False  # muda pelo botão VISÍVEL/RESTRITO do painel
 COR_MASC = "#3B82F6"  # azul: masculino em todos os gráficos de gênero
 COR_FEM = "#EC4899"   # rosa: feminino em todos os gráficos de gênero
 
+# Paleta pela teoria das cores (60-30-10):
+# base = azul da marca; análogas frias = identidade dos dados (a mesma coisa tem sempre a mesma cor);
+# complementar quente = destaque e alerta; verde = meta batida (convenção universal).
+COR_CAD = "#38BDF8"      # céu        · cadastros e pessoas
+COR_MUL = "#A78BFA"      # violeta    · lideranças e multiplicadores
+COR_BAI = "#2DD4BF"      # verde-água · bairros e território
+COR_VEI = "#FBBF24"      # âmbar      · veículos, mobilização e 1º lugar (complementar do azul)
+COR_OK = "#4ADE80"       # verde      · meta batida
+COR_ATENCAO = "#FB923C"  # laranja    · atenção (parado, conferir)
+COR_CRITICO = "#FB7185"  # coral      · crítico (zero cadastros, duplicata certa, bairro vazio)
+COR_NEUTRO = "#93A8CC"   # cinza-azulado · números de apoio
+ACENTOS = {
+    "cv-c-ciano": COR_CAD, "cv-c-violeta": COR_MUL, "cv-c-agua": COR_BAI, "cv-c-ambar": COR_VEI,
+    "cv-c-verde": COR_OK, "cv-c-laranja": COR_ATENCAO, "cv-c-coral": COR_CRITICO,
+    "cv-c-azul": "#60A5FA", "cv-c-rosa": "#F472B6", "cv-c-neutro": COR_NEUTRO,
+}
+
+
+def rgba(hex_cor: str, alfa: float) -> str:
+    h = hex_cor.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alfa:.2f})"
+
 # Outras ferramentas da campanha (abrem em nova aba): título, para que serve, endereço, ícone, cor.
 LINKS = [
     ("Carona Amiga", "Central de caronas: pedidos, motoristas e corridas do dia.",
-     "https://projcaronaamiga.netlify.app/painel.html", "carro", "verde"),
+     "https://projcaronaamiga.netlify.app/painel.html", "carro", "ambar"),   # transporte = cor dos veículos
     ("Onde eu voto", "O eleitor digita a seção e recebe o local com rota no mapa.",
-     "https://projlocaldevotacao.netlify.app/", "urna", "azul"),
+     "https://projlocaldevotacao.netlify.app/", "urna", "ceu"),             # eleitor = cor dos cadastros
     ("Mapa de escolas", "Todos os locais de votação da zona no mapa.",
-     "https://mapa2026.streamlit.app/", "mapa", "ambar"),
+     "https://mapa2026.streamlit.app/", "mapa", "agua"),                    # território = cor dos bairros
 ]
 
 
@@ -1729,7 +1752,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-tool{--c:#38BDF8;--cf:rgba(56,189,248,.16);display:flex;align-items:center;gap:12px;min-height:76px;padding:14px;border-radius:18px;background:linear-gradient(135deg,var(--cf),rgba(13,32,74,.62) 70%);border:1px solid var(--borda2);border-left:4px solid var(--c);color:var(--txt) !important;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
 .cv-tool:hover{transform:translateY(-2px);border-color:var(--c);box-shadow:0 10px 26px rgba(0,0,0,.35)}
 .cv-tool:focus-visible{outline:2px solid #7DD3FC;outline-offset:3px}
-.cv-tool.verde{--c:#4ADE80;--cf:rgba(34,197,94,.18)}.cv-tool.azul{--c:#60A5FA;--cf:rgba(59,130,246,.22)}.cv-tool.ambar{--c:#FCD34D;--cf:rgba(251,191,36,.16)}
+.cv-tool.verde{--c:#4ADE80;--cf:rgba(34,197,94,.18)}.cv-tool.azul{--c:#60A5FA;--cf:rgba(59,130,246,.22)}.cv-tool.ambar{--c:#FBBF24;--cf:rgba(251,191,36,.16)}.cv-tool.ceu{--c:#38BDF8;--cf:rgba(56,189,248,.18)}.cv-tool.agua{--c:#2DD4BF;--cf:rgba(45,212,191,.16)}
 .cv-tool-ico{width:46px;height:46px;flex-shrink:0;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--cf);color:var(--c)}
 .cv-tool-txt{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:3px}
 .cv-tool{flex-wrap:wrap}
@@ -1762,7 +1785,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-marca small{display:block;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut)}
 .cv-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--mut);padding:6px 10px;border-radius:999px;background:var(--painel);border:1px solid var(--borda);white-space:nowrap}
 .cv-dot{width:8px;height:8px;border-radius:50%;background:#4ADE80;box-shadow:0 0 10px #4ADE80}
-.cv-faixa{margin-top:12px;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;font-size:12.5px;font-weight:700;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.35);color:#FCD34D}
+.cv-faixa{margin-top:12px;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;font-size:12.5px;font-weight:700;background:rgba(251,146,60,.10);border:1px solid rgba(251,146,60,.35);color:#FDBA74}
 .cv-hero{display:flex;flex-direction:column;gap:var(--gap);margin-top:8px}
 @media(min-width:900px){.cv-hero{flex-direction:row;align-items:center;justify-content:space-between}}
 .cv-h1{font-family:var(--fd);font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.08}
@@ -1790,29 +1813,39 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-junto{margin-top:var(--gap)}
 @media(min-width:900px){.cv-kpis.q4{grid-template-columns:repeat(4,minmax(0,1fr))}.cv-kpis.q3{grid-template-columns:repeat(3,minmax(0,1fr))}.cv-kpis.q3>:last-child{grid-column:auto}}
 .cv-kpi{padding:14px;display:flex;flex-direction:column;gap:7px;border-radius:18px;min-width:0}
+.cv-kpi,.cv-gen{position:relative;overflow:hidden}
+.cv-kpi::before,.cv-gen::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--c,#38BDF8),transparent 85%)}
+.cv-kpi-ico{width:32px;height:32px;flex-shrink:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:rgba(148,163,184,.12);background:color-mix(in srgb,var(--c,#38BDF8) 16%,transparent)}
 .cv-kpi-h{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .cv-kpi .cv-num{font-size:30px}
 @media(min-width:768px){.cv-kpi .cv-num{font-size:34px}}
 .cv-kpi-p{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:var(--sua);font-weight:600;min-height:20px}
-.cv-kpi.ativo{border-color:#3B82F6;box-shadow:0 0 0 1px #3B82F6 inset}
+.cv-kpi.ativo{border-color:var(--c,#3B82F6);box-shadow:0 0 0 1px var(--c,#3B82F6) inset}
 .cv-c-ciano{color:#7DD3FC}.cv-c-azul{color:#93C5FD}.cv-c-ambar{color:#FCD34D}.cv-c-verde{color:#4ADE80}.cv-c-rosa{color:#F9A8D4}
+.cv-c-violeta{color:#C4B5FD}.cv-c-agua{color:#5EEAD4}.cv-c-laranja{color:#FDBA74}.cv-c-coral{color:#FDA4AF}.cv-c-neutro{color:#B4C3DD}
 .cv-sec{display:flex;flex-direction:column;gap:8px;margin:8px 0 0}
 .cv-sec-t{font-family:var(--fd);font-size:23px;font-weight:700;letter-spacing:-.2px}
+.cv-sec-t.marca{display:flex;align-items:center;gap:10px}
+.cv-sec-t.marca::before{content:"";width:5px;height:.85em;flex-shrink:0;border-radius:3px;background:var(--c);box-shadow:0 0 12px var(--c)}
 @media(min-width:768px){.cv-sec-t{font-size:27px}}
 .cv-sec-s{font-size:13px;color:var(--mut);line-height:1.45}
 .cv-chips{display:flex;flex-wrap:wrap;gap:6px}
 .cv-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(147,168,204,.12);color:var(--sua);border:1px solid var(--borda);white-space:nowrap}
 .cv-chip.ok{background:rgba(34,197,94,.14);color:#4ADE80;border-color:rgba(34,197,94,.3)}
-.cv-chip.al{background:rgba(251,191,36,.14);color:#FCD34D;border-color:rgba(251,191,36,.3)}
+.cv-chip.al{background:rgba(251,146,60,.14);color:#FDBA74;border-color:rgba(251,146,60,.32)}
+.cv-chip.vi{background:rgba(167,139,250,.16);color:#DDD6FE;border-color:rgba(167,139,250,.34)}
+.cv-chip.ag{background:rgba(45,212,191,.14);color:#99F6E4;border-color:rgba(45,212,191,.32)}
+.cv-chip.am{background:rgba(251,191,36,.14);color:#FDE68A;border-color:rgba(251,191,36,.32)}
 .cv-chip.az{background:rgba(59,130,246,.16);color:#BFDBFE;border-color:rgba(59,130,246,.32)}
-.cv-chip.vm{background:rgba(248,113,113,.14);color:#FCA5A5;border-color:rgba(248,113,113,.32)}
+.cv-chip.vm{background:rgba(251,113,133,.14);color:#FDA4AF;border-color:rgba(251,113,133,.34)}
 .cv-chip.rs{background:rgba(236,72,153,.16);color:#F9A8D4;border-color:rgba(236,72,153,.34)}
 .cv-chip.sm{font-size:10.5px;padding:2px 8px}
 .cv-bar{display:block;height:8px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden;width:100%}
 .cv-bar.fina{height:6px}
 .cv-bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#2563EB,#38BDF8)}
 .cv-bar>i.ok{background:linear-gradient(90deg,#16A34A,#4ADE80)}
-.cv-bar>i.al{background:linear-gradient(90deg,#F59E0B,#FCD34D)}
+.cv-bar>i.al{background:linear-gradient(90deg,#EA580C,#FB923C)}
+.cv-bar>i.vi{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
 .cv-bar>i.ou{background:linear-gradient(90deg,#F59E0B,#FDE68A)}
 .cv-bar>i.masc{background:linear-gradient(90deg,#2563EB,#60A5FA)}
 .cv-bar>i.fem{background:linear-gradient(90deg,#DB2777,#F472B6)}
@@ -1825,6 +1858,8 @@ details.cv-lid[open],details.cv-bai[open]{border-color:#3B82F6}
 .cv-lid>summary{padding:16px}
 .cv-row{display:flex;align-items:center;gap:12px;width:100%}
 .cv-rank{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:17px;background:rgba(59,130,246,.2);color:#BFDBFE}
+.cv-lid .cv-rank{background:rgba(167,139,250,.18);color:#DDD6FE}
+.cv-bai .cv-rank{background:rgba(45,212,191,.16);color:#99F6E4}
 .r1{background:linear-gradient(135deg,#FDE68A,#F59E0B) !important;color:#3D2500 !important}
 .r2{background:linear-gradient(135deg,#F1F5F9,#B8C2D6) !important;color:#1F2937 !important}
 .r3{background:linear-gradient(135deg,#FFD1A8,#F08A4B) !important;color:#4A1D05 !important}
@@ -1843,7 +1878,7 @@ details[open]>summary .cv-chev{transform:rotate(180deg)}
 details.cv-mul{background:var(--painel2);border:1px solid rgba(125,170,255,.14);border-radius:14px;overflow:hidden}
 details.cv-mul[open]{border-color:#2F6FE0}
 .cv-mul>summary{padding:12px}
-.cv-ini{width:34px;height:34px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;background:rgba(59,130,246,.2);color:#BFDBFE}
+.cv-ini{width:34px;height:34px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;background:rgba(167,139,250,.18);color:#DDD6FE}
 .cv-mul-nome{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cv-mul-num{font-family:var(--fd);font-size:17px;font-weight:700;white-space:nowrap}
 .cv-mul-corpo{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
@@ -1877,13 +1912,13 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-mais{display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:12px;border:1px dashed rgba(125,170,255,.35);color:var(--sua);font-size:12.5px;font-weight:700}
 .cv-top-l{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .cv-top{display:flex;align-items:center;gap:12px;min-width:0}
-.cv-av{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:rgba(59,130,246,.2);color:#BFDBFE}
+.cv-av{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:rgba(167,139,250,.18);color:#DDD6FE}
 .cv-top .cv-info b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cv-top .cv-num{font-size:20px}
 .cv-cols{position:relative;height:150px;display:flex;align-items:flex-end;gap:6px;margin-top:16px}
 .cv-colx{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;position:relative;z-index:1}
 .cv-colx span{font-size:11px;font-weight:700;color:var(--sua)}
-.cv-colx i{display:block;width:100%;max-width:44px;border-radius:6px 6px 3px 3px;background:rgba(226,232,240,.85)}
+.cv-colx i{display:block;width:100%;max-width:44px;border-radius:6px 6px 3px 3px;background:rgba(56,189,248,.32)}
 .cv-colx.hi i{background:#38BDF8;box-shadow:0 0 16px rgba(56,189,248,.45)}
 .cv-colx.hi span{color:#7DD3FC}
 .cv-media{position:absolute;left:0;right:0;border-top:1px dashed rgba(226,232,240,.45);z-index:2}
@@ -1910,7 +1945,7 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-mini small{font-size:10px;color:var(--mut);font-weight:800;text-transform:uppercase;letter-spacing:.6px}
 .cv-vei{padding:14px;display:flex;flex-direction:column;gap:10px;border-radius:18px}
 .cv-vei-top{display:flex;align-items:center;gap:12px}
-.cv-vei-ico{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:rgba(56,189,248,.14);color:#7DD3FC;display:flex;align-items:center;justify-content:center}
+.cv-vei-ico{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:rgba(251,191,36,.14);color:#FCD34D;display:flex;align-items:center;justify-content:center}
 .cv-vei-mod{font-family:var(--fd);font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cv-cor{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.45);flex-shrink:0}
 .cv-placa{margin-left:auto;display:flex;flex-direction:column;align-items:center;min-width:94px;border-radius:7px;background:#F8FAFC;color:#0F172A;border:2px solid #0F172A;overflow:hidden;flex-shrink:0}
@@ -1956,7 +1991,7 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-tab-w{overflow-x:auto}
 .cv-vazio{padding:26px 16px;text-align:center;color:var(--mut);font-size:13.5px}
 .cv-nota{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#DBEAFE;font-size:13px;line-height:1.5}
-.cv-nota.al{background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.35);color:#FDE68A}
+.cv-nota.al{background:rgba(251,146,60,.10);border-color:rgba(251,146,60,.35);color:#FED7AA}
 .cv-nota .cv-i{margin-top:2px}
 .cv-login{max-width:440px;margin:28px auto 6px;text-align:center;padding:30px 22px}
 .cv-login-ico{width:62px;height:62px;border-radius:18px;margin:0 auto 14px;background:#2563EB;display:flex;align-items:center;justify-content:center;color:#FFFFFF;box-shadow:0 10px 28px rgba(37,99,235,.5)}
@@ -1979,9 +2014,10 @@ def chip(txt, tipo: str = "", icone: str | None = None, pequeno: bool = False) -
     return f'<span class="{classes}">{ic(icone, "p") if icone else ""}{esc(txt)}</span>'
 
 
-def barra(pct, tipo: str = "", fina: bool = False) -> str:
+def barra(pct, tipo: str = "", fina: bool = False, cor: str | None = None) -> str:
     p = max(0.0, min(100.0, float(pct or 0)))
-    return f'<span class="cv-bar{" fina" if fina else ""}"><i class="{tipo}" style="width:{p:.1f}%"></i></span>'
+    fundo = f";background:{cor}" if cor else ""
+    return f'<span class="cv-bar{" fina" if fina else ""}"><i class="{tipo}" style="width:{p:.1f}%{fundo}"></i></span>'
 
 
 def whats(link: str, nome: str = "") -> str:
@@ -2011,10 +2047,13 @@ def classe_rank(pos: int) -> str:
     return {1: "r1", 2: "r2", 3: "r3"}.get(pos, "")
 
 
-def secao(titulo: str, subtitulo: str = "", chips: list | None = None) -> str:
+def secao(titulo: str, subtitulo: str = "", chips: list | None = None, cor: str | None = None) -> str:
+    """Título de seção. `cor` marca a seção com a cor do dado principal (ex.: COR_BAI em Bairros)."""
     c = f'<div class="cv-chips">{"".join(chips)}</div>' if chips else ""
     s = f'<div class="cv-sec-s">{esc(subtitulo)}</div>' if subtitulo else ""
-    return f'<div class="cv"><div class="cv-sec"><div class="cv-sec-t" role="heading" aria-level="2">{esc(titulo)}</div>{s}{c}</div></div>'
+    marca = f' marca" style="--c:{cor}' if cor else ""
+    return (f'<div class="cv"><div class="cv-sec"><div class="cv-sec-t{marca}" role="heading" aria-level="2">{esc(titulo)}</div>'
+            f'{s}{c}</div></div>')
 
 
 def nota(txt_html: str, tipo: str = "", icone: str = "info") -> str:
@@ -2034,8 +2073,10 @@ def vazio(msg: str) -> str:
 
 
 def kpi(rotulo, valor, icone, rodape_html="", cor="cv-c-ciano", ativo=False) -> str:
-    return (f'<div class="cv-card cv-kpi{" ativo" if ativo else ""}"><div class="cv-kpi-h"><span class="cv-over">{esc(rotulo)}</span>'
-            f'<span class="{cor}">{ic(icone)}</span></div><span class="cv-num">{esc(valor)}</span>'
+    """Cartão de número. `cor` (classe cv-c-*) pinta o ícone e a faixa do topo com a cor do dado."""
+    return (f'<div class="cv-card cv-kpi{" ativo" if ativo else ""}" style="--c:{ACENTOS.get(cor, COR_CAD)}">'
+            f'<div class="cv-kpi-h"><span class="cv-over">{esc(rotulo)}</span>'
+            f'<span class="cv-kpi-ico {cor}">{ic(icone)}</span></div><span class="cv-num">{esc(valor)}</span>'
             f'<span class="cv-kpi-p">{rodape_html}</span></div>')
 
 
@@ -2132,8 +2173,8 @@ def visao_geral(total, meta, pct, mult_ok, n_mult, pct_mult, semana, kpi_html) -
 <div class="cv-card cv-pad">
 <div class="cv-cab"><span class="cv-titulo">Visão geral</span>{chip(sem_txt, "ok" if semana else "")}</div>
 <div class="cv-aneis">
-{anel(pct, f"{pct:.0f}%", "da meta", f"{fmt_int(total)} de {fmt_int(meta)} cadastros")}
-{anel(pct_mult, f"{pct_mult:.0f}%", "na meta", f"{mult_ok} de {n_mult} multiplicadores", cores=("#16A34A", "#22D3EE", "#38BDF8"))}
+{anel(pct, f"{pct:.0f}%", "da meta", f"{fmt_int(total)} de {fmt_int(meta)} cadastros", cores=("#0284C7", "#38BDF8", "#7DD3FC"))}
+{anel(pct_mult, f"{pct_mult:.0f}%", "na meta", f"{mult_ok} de {n_mult} multiplicadores", cores=("#7C3AED", "#A78BFA", "#C4B5FD"))}
 </div>
 </div>
 <div class="cv-kpis">{kpi_html}</div>
@@ -2147,7 +2188,7 @@ def _status_mult(m: dict) -> str:
     if m["ok"]:
         return chip("Meta batida", "ok", "check", pequeno=True)
     if m["total"] == 0:
-        return chip("Sem cadastros", "al", "alerta", pequeno=True)
+        return chip("Sem cadastros", "vm", "alerta", pequeno=True)
     if m["parado"]:
         return chip(f"Parado há {m['dias_sem']} dias", "al", "alerta", pequeno=True)
     return chip(f"Faltam {m['meta'] - m['total']}", "", pequeno=True)
@@ -2186,7 +2227,7 @@ def lista_lideres(lideres: list, abrir_lid: set, abrir_mult: set, dup_linhas: se
                 ult = f"Último cadastro há {m['dias_sem']} dia{'s' if m['dias_sem'] > 1 else ''}"
             contato = (f'<a class="cv-wa-l" href="{esc(m["wa"])}" target="_blank" rel="noopener noreferrer">'
                        f'{ic("wa")}Falar com {esc(m["nome"].split(" ")[0])}</a>') if m["wa"] else ""
-            tipo_barra = "ok" if m["ok"] else ("al" if m["parado"] else "")
+            tipo_barra = "ok" if m["ok"] else ("al" if m["parado"] else "vi")
             corpo = (f'<div class="cv-mul-corpo"><div class="cv-mul-ct"><span class="cv-meta">{ic("relogio", "p")}{esc(ult)}</span>{contato}</div>'
                      f'<div class="cv-pessoas duas">{"".join(pessoas) or "<span class=cv-meta>Nenhum cadastro ainda.</span>"}</div></div>')
             mults_html.append(
@@ -2203,7 +2244,7 @@ def lista_lideres(lideres: list, abrir_lid: set, abrir_mult: set, dup_linhas: se
             f'<span class="cv-info"><span class="cv-over">Líder</span><span class="cv-nome-l"><span class="cv-nome">{esc(lid["nome"])}</span>{_wa_mini(lid.get("wa", ""), lid["nome"])}</span>'
             f'<span class="cv-sub">{lid["n_mult"]} multiplicadores · {lid["na_meta"]} na meta</span></span>'
             f'<span class="cv-tot"><b>{fmt_int(lid["total"])}</b><small>de {fmt_int(lid["meta"])}</small></span>{ic("chev", "cv-chev g")}</span>'
-            f'<span class="cv-prog">{barra(lid["pct"], "ok" if lid["pct"] >= 100 else "")}<b>{lid["pct"]}%</b></span>'
+            f'<span class="cv-prog">{barra(lid["pct"], "ok" if lid["pct"] >= 100 else "vi")}<b>{lid["pct"]}%</b></span>'
             f'</summary><div class="cv-corpo"><div class="cv-corpo-cab"><span class="cv-over">Multiplicadores</span>'
             f'<span class="cv-chips">{aviso_parados}{chip("meta de " + str(lid["mults"][0]["meta"]) + " cada" if lid["mults"] else "", "", None, True)}</span></div>'
             f'{"".join(mults_html)}</div></details>')
@@ -2236,7 +2277,9 @@ def card_parados(parados: list, limite: int = 10) -> str:
         itens = []
         for m in parados[:limite]:
             quando = "sem cadastros" if m["total"] == 0 or m["dias_sem"] is None else f"há {m['dias_sem']} dias"
-            itens.append(f'<div class="cv-top"><span class="cv-av" style="background:rgba(251,191,36,.16);color:#FCD34D">{esc(iniciais(m["nome"]))}</span>'
+            critico = m["total"] == 0 or m["dias_sem"] is None
+            tom = "background:rgba(251,113,133,.16);color:#FDA4AF" if critico else "background:rgba(251,146,60,.16);color:#FDBA74"
+            itens.append(f'<div class="cv-top"><span class="cv-av" style="{tom}">{esc(iniciais(m["nome"]))}</span>'
                          f'<span class="cv-info"><b>{esc(m["nome"])}</b><span class="cv-sub">Líder {esc(m["lider"])} · {m["total"]}/{m["meta"]} · {quando}</span></span>'
                          f'{botao_cobrar(m)}</div>')
         resto = len(parados) - limite
@@ -2303,25 +2346,26 @@ def card_acumulado(serie: list, total: int, meta: int) -> str:
 # ---------------------------------------------------------------------------
 # Rankings genéricos (bairros, veículos, apoios)
 # ---------------------------------------------------------------------------
-def ranking_card(titulo: str, itens: list, subtitulo: str = "", limite: int | None = None, rotulo_extra: str = "") -> str:
-    """itens: lista de (nome, valor, texto_pequeno)."""
+def ranking_card(titulo: str, itens: list, subtitulo: str = "", limite: int | None = None, rotulo_extra: str = "",
+                 cor: str | None = None) -> str:
+    """itens: lista de (nome, valor, texto_pequeno). Com `cor`, a barra fica mais intensa quanto maior o valor."""
     if not itens:
         corpo = '<div class="cv-meta" style="margin-top:10px">Nada para mostrar ainda.</div>'
     else:
         mx = max(v for _, v, _ in itens) or 1
+
+        def linha(i, nome, valor, peq):
+            tom = rgba(cor, 0.35 + 0.65 * valor / mx) if cor else None
+            return (f'<div class="cv-rk"><span class="cv-rk-p">{i}</span><span class="cv-rk-n">{esc(nome)}'
+                    f'{"<small>" + esc(peq) + "</small>" if peq else ""}</span>'
+                    f'{barra(valor / mx * 100, "ou" if i == 1 and not cor else "", fina=True, cor=tom)}'
+                    f'<span class="cv-rk-v">{fmt_int(valor)}</span></div>')
+
         mostrar = itens[:limite] if limite else itens
-        linhas = []
-        for i, (nome, valor, peq) in enumerate(mostrar, start=1):
-            tipo = "ou" if i == 1 else ""
-            linhas.append(f'<div class="cv-rk"><span class="cv-rk-p">{i}</span><span class="cv-rk-n">{esc(nome)}'
-                          f'{"<small>" + esc(peq) + "</small>" if peq else ""}</span>{barra(valor / mx * 100, tipo, fina=True)}'
-                          f'<span class="cv-rk-v">{fmt_int(valor)}</span></div>')
+        linhas = [linha(i, nome, valor, peq) for i, (nome, valor, peq) in enumerate(mostrar, start=1)]
         if limite and len(itens) > limite:
-            resto = "".join(
-                f'<div class="cv-rk"><span class="cv-rk-p">{i}</span><span class="cv-rk-n">{esc(nome)}'
-                f'{"<small>" + esc(peq) + "</small>" if peq else ""}</span>{barra(valor / mx * 100, "", fina=True)}'
-                f'<span class="cv-rk-v">{fmt_int(valor)}</span></div>'
-                for i, (nome, valor, peq) in enumerate(itens[limite:], start=limite + 1))
+            resto = "".join(linha(i, nome, valor, peq)
+                            for i, (nome, valor, peq) in enumerate(itens[limite:], start=limite + 1))
             linhas.append(f'<details class="cv-mul" style="margin-top:8px;background:transparent;border:0"><summary>'
                           f'<span class="cv-mais">Ver todos ({len(itens)}) {ic("chev", "p cv-chev")}</span></summary>{resto}</details>')
         corpo = f'<div style="margin-top:8px">{"".join(linhas)}</div>'
@@ -2333,11 +2377,11 @@ def ranking_card(titulo: str, itens: list, subtitulo: str = "", limite: int | No
 def card_cobertura(com: int, sem_lista: list) -> str:
     total = com + len(sem_lista)
     pct = com / total * 100 if total else 0
-    chips_sem = "".join(chip(b, "al", "pin") for b in sem_lista) or chip("Todos os bairros têm cadastro", "ok", "check")
+    chips_sem = "".join(chip(b, "vm", "pin") for b in sem_lista) or chip("Todos os bairros têm cadastro", "ok", "check")
     return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-titulo">Cobertura de bairros</div>'
             f'<div class="cv-sec-s">Bairros da lista oficial com pelo menos um cadastro.</div>'
             f'<div style="display:flex;justify-content:center;margin:16px 0 8px">'
-            f'{anel(pct, f"{pct:.0f}%", "cobertos", f"{com} de {total} bairros")}</div>'
+            f'{anel(pct, f"{pct:.0f}%", "cobertos", f"{com} de {total} bairros", cores=("#0D9488", "#2DD4BF", "#5EEAD4"))}</div>'
             f'<div class="cv-over" style="margin:10px 0 8px">Sem nenhum cadastro</div><div class="cv-chips">{chips_sem}</div></div></div>')
 
 
@@ -2373,16 +2417,16 @@ def cards_genero(perf: dict) -> str:
     m, f, n = perf["sexos"]["Masculino"], perf["sexos"]["Feminino"], perf["sexos"][NAO_INFORMADO]
 
     # Cores fixas por gênero em toda a aba: masculino = azul, feminino = rosa.
-    def card(rotulo, d, cor, icone, tipo_chip, tipo_barra):
+    def card(rotulo, d, cor, icone, tipo_chip, tipo_barra, acento):
         media = f"{fmt_dec(d['media'])} anos" if d["media"] is not None else "—"
-        return (f'<div class="cv-card cv-gen"><div class="cv-kpi-h"><span class="cv-over">{rotulo}</span><span style="color:{cor}">{ic(icone, "g")}</span></div>'
+        return (f'<div class="cv-card cv-gen" style="--c:{acento}"><div class="cv-kpi-h"><span class="cv-over">{rotulo}</span><span style="color:{cor}">{ic(icone, "g")}</span></div>'
                 f'<span class="cv-num">{fmt_int(d["n"])}</span>'
                 f'<span class="cv-chips">{chip(fmt_dec(d["pct"]) + "% da base", tipo_chip)}{chip("Idade média " + media)}</span>'
                 f'{barra(d["pct"], tipo_barra)}</div>')
 
     geral = perf["media_geral"]
-    geral_card = (f'<div class="cv-card cv-gen"><div class="cv-kpi-h"><span class="cv-over">Idade média geral</span>'
-                  f'<span class="cv-c-ambar">{ic("bolo", "g")}</span></div>'
+    geral_card = (f'<div class="cv-card cv-gen" style="--c:{COR_CAD}"><div class="cv-kpi-h"><span class="cv-over">Idade média geral</span>'
+                  f'<span class="cv-c-ciano">{ic("bolo", "g")}</span></div>'
                   f'<span class="cv-num">{fmt_dec(geral)}{" <small style=font-size:16px>anos</small>" if geral is not None else ""}</span>'
                   f'<span class="cv-chips">{chip("Mediana " + fmt_dec(perf["mediana"], 0) + " anos")}'
                   f'{chip(str(perf["sem_idade"]) + " sem data de nascimento", "al" if perf["sem_idade"] else "")}</span></div>')
@@ -2393,7 +2437,8 @@ def cards_genero(perf: dict) -> str:
            f'<span><i style="background:{COR_FEM}"></i>Feminino {fmt_dec(f["pct"])}%</span>'
            f'{"<span><i style=background:rgba(148,163,184,.4)></i>Não informado " + fmt_dec(n["pct"]) + "%</span>" if n["n"] else ""}</div>')
     return (f'<div class="cv"><div class="cv-kpis q3">'
-            f'{card("Masculino", m, "#93C5FD", "pessoa", "az", "masc")}{card("Feminino", f, "#F9A8D4", "pessoa", "rs", "fem")}{geral_card}</div>'
+            f'{card("Masculino", m, "#93C5FD", "pessoa", "az", "masc", "#60A5FA")}'
+            f'{card("Feminino", f, "#F9A8D4", "pessoa", "rs", "fem", "#F472B6")}{geral_card}</div>'
             f'<div class="cv-card cv-pad cv-junto"><div class="cv-over">Proporção da base</div>{split}{leg}</div></div>')
 
 
@@ -2416,7 +2461,7 @@ def card_aniversariantes(lista: list, limite: int = 12) -> str:
         itens = []
         for a in lista[:limite]:
             quando = "Hoje!" if a["faltam"] == 0 else ("Amanhã" if a["faltam"] == 1 else a["data"].strftime("%d/%m"))
-            itens.append(f'<div class="cv-top"><span class="cv-av" style="background:rgba(251,191,36,.16);color:#FCD34D">{ic("bolo")}</span>'
+            itens.append(f'<div class="cv-top"><span class="cv-av" style="background:rgba(56,189,248,.16);color:#7DD3FC">{ic("bolo")}</span>'
                          f'<span class="cv-info"><b>{esc(a["nome"])}</b><span class="cv-sub">{esc(quando)} · faz {a["idade"]} anos · {esc(a["bairro"])}</span></span>'
                          f'{whats(a["wa"], a["nome"])}</div>')
         resto = len(lista) - limite
@@ -2424,7 +2469,7 @@ def card_aniversariantes(lista: list, limite: int = 12) -> str:
             itens.append(f'<div class="cv-mais">e mais {resto}</div>')
         corpo = f'<div class="cv-top-l">{"".join(itens)}</div>'
     return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-cab"><span class="cv-titulo">Aniversariantes da semana</span>'
-            f'{chip(str(len(lista)), "al" if lista else "")}</div><div class="cv-sec-s">Próximos 7 dias · um ótimo motivo para mandar mensagem.</div>{corpo}</div></div>')
+            f'{chip(str(len(lista)), "az" if lista else "")}</div><div class="cv-sec-s">Próximos 7 dias · um ótimo motivo para mandar mensagem.</div>{corpo}</div></div>')
 
 
 def card_qualidade(q: dict, total: int) -> str:
@@ -2433,7 +2478,7 @@ def card_qualidade(q: dict, total: int) -> str:
         ("Título incompleto", q["titulo_invalido"]), ("WhatsApp inválido", q["tel_invalido"]),
         ("Sem sexo informado", q["sem_sexo"]), ("Sem seção", q["sem_secao"]), ("Sem bairro", q["sem_bairro"]),
     ]
-    caixas = "".join(f'<span><b class="{"cv-c-ambar" if v else "cv-c-verde"}">{fmt_int(v)}</b><small>{esc(t)}</small></span>' for t, v in itens)
+    caixas = "".join(f'<span><b class="{"cv-c-laranja" if v else "cv-c-verde"}">{fmt_int(v)}</b><small>{esc(t)}</small></span>' for t, v in itens)
     fora = ""
     if q["fora_equipe"]:
         lista = "".join(chip(f'{x["MULT"]} ({x["QTD"]})', "al", "rede") for x in q["fora_equipe"])
@@ -2450,7 +2495,7 @@ def card_qualidade(q: dict, total: int) -> str:
 def card_veiculo(p) -> str:
     cor = (f'<span class="cv-cor" style="background:{esc(p.COR_HEX)}"></span>' if p.COR_HEX else "")
     placa = f'<span class="cv-placa"><small>BRASIL</small><b>{esc(p.PLACA)}</b></span>' if p.PLACA else ""
-    chips = [chip(p.BAIRRO, "", "pin"), chip("Líder " + p.LIDER, "az")]
+    chips = [chip(p.BAIRRO, "ag", "pin"), chip("Líder " + p.LIDER, "vi")]
     if p.DIA_E:
         chips.append(chip("Dia da eleição", "ok", "check"))
     if p.ADESIVO:
@@ -2473,7 +2518,7 @@ def grade(cards: list, tres: bool = True, limite: int | None = None, total: int 
 
 def card_apoio(p, tipo: str) -> str:
     detalhe = f'{esc(p.MULT)} · Líder {esc(p.LIDER)}'
-    chips = [chip(p.BAIRRO, "", "pin")]
+    chips = [chip(p.BAIRRO, "ag", "pin")]
     if p.SECAO:
         chips.append(chip("Seção " + p.SECAO, ""))
     if tipo == "ADESIVO" and (p.MODELO or p.PLACA):
@@ -2822,9 +2867,9 @@ def topo(d: dict, modo: str):
     kpi_html = "".join([
         ui.kpi("Cadastros", P.fmt_int(total), "users",
                f'<span class="cv-c-verde">+{P.fmt_int(vals[-1] if vals else 0)} na semana</span>{ui.sparkline(vals)}'),
-        ui.kpi("Multiplicadores", P.fmt_int(n_mult), "rede", f"em {len(lideres_reais)} lideranças", "cv-c-azul"),
+        ui.kpi("Multiplicadores", P.fmt_int(n_mult), "rede", f"em {len(lideres_reais)} lideranças", "cv-c-violeta"),
         ui.kpi("Bairros", P.fmt_int(len(resumo_b)), "pin",
-               f"{ui.esc(resumo_b.iloc[0]['bairro'])} no topo" if len(resumo_b) else "—"),
+               f"{ui.esc(resumo_b.iloc[0]['bairro'])} no topo" if len(resumo_b) else "—", "cv-c-agua"),
         ui.kpi("Veículos", P.fmt_int(v["total"]), "carro", f"{v['dia_e']} confirmados Dia E", "cv-c-ambar"),
     ])
     pct = total / meta * 100 if meta else 0
@@ -2843,7 +2888,7 @@ def aba_liderancas(d: dict):
     html(ui.secao("Ranking de lideranças", "",
                   [ui.chip(f"{na_meta} de {n_mult} multiplicadores na meta", "ok", "check"),
                    ui.chip(f"Meta: {C.META_POR_MULTIPLICADOR} por multiplicador", "", "estrela"),
-                   ui.chip(f"{n_lideres} lideranças", "az", "users")]))
+                   ui.chip(f"{n_lideres} lideranças", "vi", "users")], cor=ui.COR_MUL))
     busca = st.text_input("Buscar líder ou multiplicador", placeholder="Buscar líder ou multiplicador…",
                           key="busca_lideranca", label_visibility="collapsed")
 
@@ -2898,13 +2943,13 @@ def busca_geral(d: dict, limite: int = 30):
     chips = [ui.chip(f"{P.fmt_int(len(res))} encontrado{'s' if len(res) != 1 else ''}", "az" if len(res) else "al", "busca")]
     if len(res) > limite:
         chips.append(ui.chip(f"mostrando {limite}: refine a busca", "", "info"))
-    html(ui.secao(f"Resultado para “{busca.strip()}”", "", chips))
+    html(ui.secao(f"Resultado para “{busca.strip()}”", "", chips, cor=ui.COR_CAD))
     if res.empty:
         html(ui.vazio("Ninguém encontrado. Confira a grafia ou tente só parte do nome."))
         return
     cartoes = "".join(
         ui.pessoa(p, ui._detalhe_local(p),
-                  f'<span class="cv-chips">{ui.chip("Mult. " + p.MULT, "az", None, True)}{ui.chip("Líder " + p.LIDER, "", None, True)}</span>')
+                  f'<span class="cv-chips">{ui.chip("Mult. " + p.MULT, "vi", None, True)}{ui.chip("Líder " + p.LIDER, "", None, True)}</span>')
         for p in res.head(limite).itertuples())
     html(f'<div class="cv"><div class="cv-busca-r">{cartoes}</div></div>')
 
@@ -2936,10 +2981,10 @@ def aba_historico(d: dict):
     html(ui.secao("Histórico de cadastros",
                   "Como a base cresceu semana a semana. Use para ver o ritmo da equipe e comparar períodos.",
                   [ui.chip(f"{len(serie)} semanas", "az", "grafico"),
-                   ui.chip(f"Média {P.fmt_dec(media, 0)}/semana", "", "estrela")]))
+                   ui.chip(f"Média {P.fmt_dec(media, 0)}/semana", "", "estrela")], cor=ui.COR_CAD))
     html(ui.kpis([
         ui.kpi("Esta semana", P.fmt_int(esta), "grafico", comp, "cv-c-ciano"),
-        ui.kpi("Média semanal", P.fmt_dec(media, 0), "relogio", f"em {len(serie)} semanas", "cv-c-azul"),
+        ui.kpi("Média semanal", P.fmt_dec(media, 0), "relogio", f"em {len(serie)} semanas", "cv-c-neutro"),
         ui.kpi("Melhor semana", P.fmt_int(melhor["n"]) if melhor else "—", "trofeu",
                f"semana de {ui.esc(melhor['rotulo'])}" if melhor else "", "cv-c-ambar"),
         ui.kpi("Para a meta", meta_val, "estrela", meta_txt, "cv-c-verde"),
@@ -2959,26 +3004,28 @@ def aba_historico(d: dict):
 def aba_bairros(d: dict):
     cad = d["base"]["cadastros"]
     resumo, sem = d["bairros"]
-    html(ui.secao("Mapeamento por bairro", "Ranking de cadastros por bairro, cobertura e explorador de apoiadores."))
+    html(ui.secao("Mapeamento por bairro", "Ranking de cadastros por bairro, cobertura e explorador de apoiadores.",
+                  cor=ui.COR_BAI))
     if resumo.empty:
         html(ui.vazio("Ainda não há cadastros com bairro informado."))
         return
     topo_b = resumo.iloc[0]
     media = len(cad) / len(resumo) if len(resumo) else 0
     html(ui.kpis([
-        ui.kpi("Bairros com cadastro", P.fmt_int(len(resumo)), "pin", "na base atual"),
+        ui.kpi("Bairros com cadastro", P.fmt_int(len(resumo)), "pin", "na base atual", "cv-c-agua"),
         ui.kpi("Maior base", topo_b["bairro"], "trofeu", f'{P.fmt_int(topo_b["total"])} cadastros', "cv-c-ambar"),
-        ui.kpi("Sem cadastro", P.fmt_int(len(sem)), "alerta", "da lista oficial", "cv-c-ambar" if sem else "cv-c-verde"),
-        ui.kpi("Média por bairro", P.fmt_dec(media), "grafico", "cadastros", "cv-c-azul"),
+        ui.kpi("Sem cadastro", P.fmt_int(len(sem)), "alerta", "da lista oficial", "cv-c-coral" if sem else "cv-c-verde"),
+        ui.kpi("Média por bairro", P.fmt_dec(media), "grafico", "cadastros", "cv-c-neutro"),
     ]))
     col1, col2 = colunas_2_1()
     with col1:
         itens = [(r.bairro, r.total, f"{r.lideres} líd. · {r.veiculos} veíc.") for r in resumo.itertuples()]
-        html(ui.ranking_card("Ranking de bairros", itens, "Do bairro com mais cadastros para o com menos.", limite=12))
+        html(ui.ranking_card("Ranking de bairros", itens, "Do bairro com mais cadastros para o com menos.", limite=12,
+                             cor=ui.COR_BAI))
     with col2:
         html(ui.card_cobertura(len(resumo), sem))
 
-    html(ui.secao("Explorador de bairros", "Filtre por bairro ou procure uma pessoa pelo nome."))
+    html(ui.secao("Explorador de bairros", "Filtre por bairro ou procure uma pessoa pelo nome.", cor=ui.COR_BAI))
     f1, f2 = st.columns(2)
     with f1:
         escolha = st.selectbox("Bairro", ["Todos os bairros"] + list(resumo["bairro"]), key="filtro_bairro")
@@ -2998,13 +3045,14 @@ def aba_bairros(d: dict):
 
 def aba_perfil(d: dict):
     perf = d["perfil"]
-    html(ui.secao("Perfil demográfico", "Gênero, idade e dados que ajudam a falar com cada público."))
+    html(ui.secao("Perfil demográfico", "Gênero, idade e dados que ajudam a falar com cada público.", cor=ui.COR_CAD))
     html(ui.cards_genero(perf))
     col1, col2 = st.columns(2)
     with col1:
         html(ui.card_piramide(perf))
         itens = [(l["local"], l["total"], l["bairro"]) for l in d["locais"]]
-        html(ui.ranking_card("Top locais de votação", itens, "Onde estão mais apoiadores, pela seção informada."))
+        html(ui.ranking_card("Top locais de votação", itens, "Onde estão mais apoiadores, pela seção informada.",
+                             cor=ui.COR_CAD))
     with col2:
         html(ui.card_aniversariantes(d["aniversariantes"]))
         html(ui.card_qualidade(d["qualidade"], perf["total"]))
@@ -3012,12 +3060,12 @@ def aba_perfil(d: dict):
 
 def aba_veiculos(d: dict):
     v = d["veiculos"]
-    html(ui.secao("Frota de apoio", "Veículos cadastrados, onde estão e quem confirmou o dia da eleição."))
+    html(ui.secao("Frota de apoio", "Veículos cadastrados, onde estão e quem confirmou o dia da eleição.", cor=ui.COR_VEI))
     html(ui.kpis([
-        ui.kpi("Veículos", P.fmt_int(v["total"]), "carro", f"{P.fmt_dec(v['pct'])}% da base"),
-        ui.kpi("Bairros cobertos", P.fmt_int(v["bairros"]), "pin", "com pelo menos 1", "cv-c-azul"),
+        ui.kpi("Veículos", P.fmt_int(v["total"]), "carro", f"{P.fmt_dec(v['pct'])}% da base", "cv-c-ambar"),
+        ui.kpi("Bairros cobertos", P.fmt_int(v["bairros"]), "pin", "com pelo menos 1", "cv-c-agua"),
         ui.kpi("Dia da eleição", P.fmt_int(v["dia_e"]), "urna", "motoristas confirmados", "cv-c-verde"),
-        ui.kpi("Com adesivo", P.fmt_int(v["adesivo"]), "etiqueta", "veículos adesivados", "cv-c-ambar"),
+        ui.kpi("Com adesivo", P.fmt_int(v["adesivo"]), "etiqueta", "veículos adesivados", "cv-c-neutro"),
     ]))
     if v["total"] == 0:
         html(ui.vazio("Nenhum veículo cadastrado ainda."))
@@ -3025,12 +3073,12 @@ def aba_veiculos(d: dict):
     col1, col2 = st.columns(2)
     with col1:
         itens = [(r.bairro, r.total, "") for r in v["por_bairro"].itertuples()]
-        html(ui.ranking_card("Veículos por bairro", itens, "Do maior para o menor.", limite=10))
+        html(ui.ranking_card("Veículos por bairro", itens, "Do maior para o menor.", limite=10, cor=ui.COR_BAI))
     with col2:
         itens = [(r.lider, r.total, "") for r in v["por_lider"].itertuples()]
-        html(ui.ranking_card("Veículos por liderança", itens, "Quem trouxe mais motoristas.", limite=10))
+        html(ui.ranking_card("Veículos por liderança", itens, "Quem trouxe mais motoristas.", limite=10, cor=ui.COR_MUL))
 
-    html(ui.secao("Lista de veículos", "Filtre por bairro, modelo, placa ou nome do motorista."))
+    html(ui.secao("Lista de veículos", "Filtre por bairro, modelo, placa ou nome do motorista.", cor=ui.COR_VEI))
     f1, f2 = st.columns(2)
     with f1:
         escolha = st.selectbox("Bairro", ["Todos os bairros"] + list(v["por_bairro"]["bairro"]), key="filtro_veic_bairro")
@@ -3058,12 +3106,13 @@ def aba_apoio(d: dict):
     cad = d["base"]["cadastros"]
     opcoes = {"Adesivo veicular": ("ADESIVO", "etiqueta"), "Bandeiras": ("BANDEIRA", "bandeira"),
               "Dia da eleição": ("DIA_E", "urna")}
-    html(ui.secao("Apoio extra", "Quem topou ajudar além do voto: adesivo no carro, bandeira e trabalho no dia da eleição."))
+    html(ui.secao("Apoio extra", "Quem topou ajudar além do voto: adesivo no carro, bandeira e trabalho no dia da eleição.",
+                  cor=ui.COR_VEI))
     escolha = st.radio("Tipo de apoio", list(opcoes), horizontal=True, key="tipo_apoio", label_visibility="collapsed")
     col_flag, _ = opcoes[escolha]
     html(ui.kpis([
         ui.kpi(nome, P.fmt_int(int(cad[c].sum())), icone, f"{P.fmt_dec(cad[c].mean() * 100 if len(cad) else 0)}% da base",
-               "cv-c-ciano", ativo=(nome == escolha))
+               "cv-c-ambar" if nome == escolha else "cv-c-neutro", ativo=(nome == escolha))
         for nome, (c, icone) in opcoes.items()
     ], quatro=False))
     sub = cad[cad[col_flag]]
@@ -3073,10 +3122,10 @@ def aba_apoio(d: dict):
     col1, col2 = st.columns(2)
     with col1:
         itens = [(b, n, "") for b, n in sub.BAIRRO.value_counts().items()]
-        html(ui.ranking_card(f"{escolha} por bairro", itens, limite=8))
+        html(ui.ranking_card(f"{escolha} por bairro", itens, limite=8, cor=ui.COR_BAI))
     with col2:
         itens = [(b, n, "") for b, n in sub.LIDER.value_counts().items()]
-        html(ui.ranking_card(f"{escolha} por liderança", itens, limite=8))
+        html(ui.ranking_card(f"{escolha} por liderança", itens, limite=8, cor=ui.COR_MUL))
     f1, f2 = st.columns(2)
     with f1:
         bairro = st.selectbox("Bairro", ["Todos os bairros"] + sorted(sub.BAIRRO.unique()), key="filtro_apoio_bairro")
@@ -3094,15 +3143,17 @@ def aba_apoio(d: dict):
 
 def aba_duplicatas(d: dict):
     grupos = d["duplicatas"]
-    html(ui.secao("Cadastros duplicados", "Comparação por nome completo, CPF, título de eleitor e WhatsApp."))
+    html(ui.secao("Cadastros duplicados", "Comparação por nome completo, CPF, título de eleitor e WhatsApp.",
+                  cor=ui.COR_CRITICO))
     envolvidos = sum(len(g["membros"]) for g in grupos)
     html(ui.kpis([
-        ui.kpi("Grupos encontrados", P.fmt_int(len(grupos)), "copia", "possíveis repetições"),
-        ui.kpi("Cadastros envolvidos", P.fmt_int(envolvidos), "users", "somando os grupos", "cv-c-azul"),
+        ui.kpi("Grupos encontrados", P.fmt_int(len(grupos)), "copia", "possíveis repetições",
+               "cv-c-coral" if grupos else "cv-c-verde"),
+        ui.kpi("Cadastros envolvidos", P.fmt_int(envolvidos), "users", "somando os grupos", "cv-c-neutro"),
         ui.kpi("Confiança alta", P.fmt_int(sum(g["confianca"] == "Alta" for g in grupos)), "alerta",
-               "CPF, título ou nome + nascimento", "cv-c-rosa"),
+               "CPF, título ou nome + nascimento", "cv-c-coral"),
         ui.kpi("Líderes diferentes", P.fmt_int(sum(g["conflito"] for g in grupos)), "rede",
-               "mesma pessoa em 2 redes", "cv-c-ambar"),
+               "mesma pessoa em 2 redes", "cv-c-laranja"),
     ]))
     html(ui.nota("<b>Como limpar:</b> confira os líderes de cada grupo e apague na planilha a linha da cópia. "
                  "O <b>1º cadastro</b> é o mais antigo. Apague <b>de baixo para cima</b> (maior número de linha primeiro), "
@@ -3130,7 +3181,7 @@ def aba_duplicatas(d: dict):
 
 
 def aba_relatorios(d: dict, parametros: tuple):
-    html(ui.secao("Relatórios", "Arquivos prontos para imprimir, mandar no grupo ou trabalhar no Excel."))
+    html(ui.secao("Relatórios", "Arquivos prontos para imprimir, mandar no grupo ou trabalhar no Excel.", cor="#60A5FA"))
     hoje = d["base"]["hoje"].strftime("%Y-%m-%d")
     xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     col1, col2, col3 = st.columns(3)

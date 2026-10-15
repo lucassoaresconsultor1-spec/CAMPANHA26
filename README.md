@@ -86,7 +86,23 @@ O espaçamento segue uma escala única, como nos sistemas de design do IBM Carbo
 | 1200px ou mais | 2:1 | 4 por linha |
 | 1600px ou mais | 2:1, área limitada a 1440px | 4 por linha |
 
-Masculino usa sempre azul e feminino sempre rosa na aba Perfil.
+## Cores
+
+A paleta segue a teoria das cores, na proporção 60-30-10, e a regra de que **a mesma coisa tem sempre a mesma cor** em todas as abas:
+
+| Papel | Cor | Uso |
+|---|---|---|
+| Base (60%) | Azul da marca `#2563EB` sobre azul-marinho | Fundo, botões, aba selecionada |
+| Identidade dos dados (30%): análogas ao azul | Céu `#38BDF8` | Cadastros e pessoas (Histórico, Perfil, busca) |
+| | Violeta `#A78BFA` | Lideranças e multiplicadores (ranking, barras "por liderança") |
+| | Verde-água `#2DD4BF` | Bairros e território (ranking, barras "por bairro", cobertura) |
+| Acento (10%): complementar do azul | Âmbar `#FBBF24` | Veículos, apoio extra, 1º lugar e melhor semana |
+| Status | Verde `#4ADE80` | Meta batida, tudo certo |
+| | Laranja `#FB923C` | Atenção: parado, conferir, líderes diferentes |
+| | Coral `#FB7185` | Crítico: zero cadastros, duplicata certa, bairro sem ninguém |
+| Gênero | Azul `#3B82F6` e rosa `#EC4899` | Masculino e feminino na aba Perfil |
+
+Cada KPI tem uma faixa no topo e um ícone na cor do seu dado, e cada seção tem um marcador colorido no título. Nos rankings, a barra fica mais intensa quanto maior o valor. Os textos coloridos têm contraste de 7,2:1 a 12,1:1 sobre os cards (WCAG AAA). Como céu × violeta, âmbar × laranja e verde × coral se parecem para quem tem daltonismo, os status sempre vêm com ícone (✓ ou ⚠) e texto. As cores ficam em constantes no topo da seção UI de `dashboard.py` (`COR_CAD`, `COR_MUL`, `COR_BAI`, `COR_VEI`, `COR_OK`, `COR_ATENCAO`, `COR_CRITICO`).
 
 ## Estrutura
 
