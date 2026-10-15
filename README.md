@@ -73,7 +73,20 @@ Depois compartilhe a planilha (somente leitura) com o e-mail da conta de serviç
 
 ## Ajustes rápidos
 
-As regras ficam no topo de `dashboard.py`: meta por multiplicador, data da eleição, dias para considerar alguém parado, tempo de inatividade, textos da vitrine (`AUTOR`, `CONTATO_URL`) e a versão.
+As regras ficam no topo de `dashboard.py`: meta por multiplicador, data da eleição, dias para considerar alguém parado, tempo de inatividade, autoria mostrada no login da demonstração (`AUTOR`) e a versão.
+
+## Layout
+
+O espaçamento segue uma escala única, como nos sistemas de design do IBM Carbon, Material Design e Shopify Polaris: o mesmo espaço entre todos os cards (`--gap`: 16px no celular e tablet, 20px a partir de 1200px) e 12px entre itens de lista. As colunas se adaptam à largura:
+
+| Largura da tela | Conteúdo + coluna lateral | KPIs |
+|---|---|---|
+| até 899px (celular e tablet) | empilhados | 2 por linha |
+| 900 a 1199px (notebook pequeno) | 3:2 | 4 por linha |
+| 1200px ou mais | 2:1 | 4 por linha |
+| 1600px ou mais | 2:1, área limitada a 1440px | 4 por linha |
+
+Masculino usa sempre azul e feminino sempre rosa na aba Perfil.
 
 ## Estrutura
 

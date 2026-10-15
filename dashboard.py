@@ -29,13 +29,11 @@ C = P = R = S = ui = _Modulo()
 from datetime import date
 
 # ---- Regras da campanha -------------------------------------------------
-VERSAO = "1.4"
+VERSAO = "1.5"
 
-# ---- Vitrine (aparece só no MODO DEMONSTRAÇÃO) ----------------------------
+# ---- Autoria (aparece só na tela de login do MODO DEMONSTRAÇÃO) -----------
 AUTOR = "Lucas Soares"
 AUTOR_DESCRICAO = "Análise e Desenvolvimento de Sistemas · ferramentas para organizar campanhas"
-CONTATO_URL = ""                      # ex.: link do WhatsApp, LinkedIn ou e-mail (vazio = sem botão)
-CONTATO_ROTULO = "Fale comigo"
 
 META_POR_MULTIPLICADOR = 15          # meta de cadastros de cada multiplicador
 DATA_ELEICAO = date(2026, 10, 4)      # usada na contagem regressiva
@@ -1607,6 +1605,8 @@ import pandas as pd
 
 
 SENSIVEL = False  # muda pelo botão VISÍVEL/RESTRITO do painel
+COR_MASC = "#3B82F6"  # azul: masculino em todos os gráficos de gênero
+COR_FEM = "#EC4899"   # rosa: feminino em todos os gráficos de gênero
 
 # Outras ferramentas da campanha (abrem em nova aba): título, para que serve, endereço, ícone, cor.
 LINKS = [
@@ -1682,12 +1682,19 @@ def ic(nome: str, extra: str = "") -> str:
 # ---------------------------------------------------------------------------
 _CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-:root{--bg:#040B1F;--painel:rgba(13,32,74,.62);--painel2:rgba(4,12,32,.55);--borda:rgba(125,170,255,.16);--borda2:rgba(125,170,255,.30);--txt:#EAF2FF;--mut:#93A8CC;--sua:#C7D6F0;--azul:#2563EB;--azul2:#3B82F6;--ciano:#38BDF8;--ciano2:#7DD3FC;--verde2:#4ADE80;--ambar2:#FCD34D;--fd:'Outfit',system-ui,sans-serif;--fb:'Plus Jakarta Sans',system-ui,sans-serif}
+:root{--bg:#040B1F;--painel:rgba(13,32,74,.62);--painel2:rgba(4,12,32,.55);--borda:rgba(125,170,255,.16);--borda2:rgba(125,170,255,.30);--txt:#EAF2FF;--mut:#93A8CC;--sua:#C7D6F0;--azul:#2563EB;--azul2:#3B82F6;--ciano:#38BDF8;--ciano2:#7DD3FC;--verde2:#4ADE80;--ambar2:#FCD34D;--fd:'Outfit',system-ui,sans-serif;--fb:'Plus Jakarta Sans',system-ui,sans-serif;--gap:16px;--gap-lista:12px}
+@media(min-width:1200px){:root{--gap:20px}}
 .stApp{background:radial-gradient(700px 520px at 8% 0px,rgba(37,99,235,.38),transparent 70%),radial-gradient(620px 620px at 100% 900px,rgba(14,165,233,.14),transparent 70%),radial-gradient(640px 640px at 0% 2200px,rgba(37,99,235,.12),transparent 70%),#040B1F !important;color:var(--txt)}
 html,body,.stApp,.stApp p,.stApp label,.stApp input,.stApp button,.stApp textarea,.stApp li{font-family:var(--fb)}
 header[data-testid="stHeader"],#MainMenu,footer,[data-testid="stToolbar"],[data-testid="stDecoration"],[data-testid="stStatusWidget"],.stDeployButton,[data-testid="stAppDeployButton"],[data-testid="manage-app-button"]{display:none !important}
 .block-container,[data-testid="stMainBlockContainer"]{max-width:1280px !important;padding:16px 14px 48px !important}
 @media(min-width:768px){.block-container,[data-testid="stMainBlockContainer"]{padding:28px 32px 60px !important}}
+@media(min-width:1600px){.block-container,[data-testid="stMainBlockContainer"]{max-width:1440px !important}}
+[data-testid="stMarkdownContainer"]:has(.cv){margin-bottom:0 !important}
+[data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"]{gap:var(--gap) !important}
+[data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]{gap:var(--gap) !important}
+@media(max-width:899px){[data-testid="stHorizontalBlock"]:has(.cv){flex-direction:column !important;flex-wrap:nowrap !important}[data-testid="stHorizontalBlock"]:has(.cv)>[data-testid="stColumn"]{width:100% !important;min-width:100% !important;flex:1 1 auto !important}}
+@media(min-width:900px) and (max-width:1199px){.st-key-cols21 [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{width:auto !important;min-width:0 !important;flex:3 1 0 !important}.st-key-cols21 [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:last-child{flex:2 1 0 !important}}
 .stTextInput [data-baseweb="input"],.stTextInput [data-baseweb="base-input"],div[data-baseweb="select"]>div{background:rgba(13,32,74,.78) !important;border-color:var(--borda2) !important;border-radius:14px !important;min-height:46px}
 .stTextInput input{color:var(--txt) !important;font-size:15px !important}
 .stTextInput label p,.stSelectbox label p,.stCheckbox label p{color:var(--sua) !important;font-weight:700 !important;font-size:12.5px !important}
@@ -1714,21 +1721,11 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-link small{font-size:10.5px;color:var(--mut);font-weight:600}
 .cv-link-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.16);color:#7DD3FC}
 @media(min-width:768px){.cv-link{flex-direction:row;align-items:center;gap:12px;padding:14px 16px}.cv-link b{font-size:14px}}
-.cv-vit{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,.14),rgba(13,32,74,.62) 70%);border:1px solid rgba(251,191,36,.35)}
-.cv-vit-ico{width:40px;height:40px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(251,191,36,.16);color:#FCD34D}
-.cv-vit-txt{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:3px}
-.cv-vit-txt>b{font-size:14px;color:#FCD34D}
-.cv-vit-txt small{font-size:12.5px;color:var(--sua);line-height:1.4}
-.cv-vit-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:#FCD34D;color:#04112B !important;font-weight:800;font-size:13px;margin-left:auto}
-.cv-guia{list-style:none;margin:4px 0 10px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-@media(min-width:768px){.cv-guia{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.cv-guia li{font-size:13px;color:var(--sua);line-height:1.4;padding:10px 12px;border-radius:12px;background:var(--painel2);border:1px solid var(--borda)}
-.cv-guia li b{color:var(--txt)}
-.cv-tools-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;margin:18px 0 8px}
+.cv-tools-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;margin:0 0 12px}
 .cv-tools-h .cv-over{display:inline-flex;align-items:center;gap:6px;color:var(--sua)}
 .cv-tools-n{font-size:11.5px;color:var(--mut);font-weight:600}
-.cv-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-@media(min-width:768px){.cv-tools{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+.cv-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap)}
+@media(min-width:768px){.cv-tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .cv-tool{--c:#38BDF8;--cf:rgba(56,189,248,.16);display:flex;align-items:center;gap:12px;min-height:76px;padding:14px;border-radius:18px;background:linear-gradient(135deg,var(--cf),rgba(13,32,74,.62) 70%);border:1px solid var(--borda2);border-left:4px solid var(--c);color:var(--txt) !important;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
 .cv-tool:hover{transform:translateY(-2px);border-color:var(--c);box-shadow:0 10px 26px rgba(0,0,0,.35)}
 .cv-tool:focus-visible{outline:2px solid #7DD3FC;outline-offset:3px}
@@ -1766,17 +1763,16 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--mut);padding:6px 10px;border-radius:999px;background:var(--painel);border:1px solid var(--borda);white-space:nowrap}
 .cv-dot{width:8px;height:8px;border-radius:50%;background:#4ADE80;box-shadow:0 0 10px #4ADE80}
 .cv-faixa{margin-top:12px;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;font-size:12.5px;font-weight:700;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.35);color:#FCD34D}
-.cv-hero{display:flex;flex-direction:column;gap:14px;margin-top:18px}
-@media(min-width:900px){.cv-hero{flex-direction:row;align-items:flex-end;justify-content:space-between}}
+.cv-hero{display:flex;flex-direction:column;gap:var(--gap);margin-top:8px}
+@media(min-width:900px){.cv-hero{flex-direction:row;align-items:center;justify-content:space-between}}
 .cv-h1{font-family:var(--fd);font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.08}
 @media(min-width:768px){.cv-h1{font-size:40px}}
-.cv-lead{font-size:13.5px;color:var(--mut);font-weight:500;margin-top:5px}
 .cv-cont{display:flex;align-items:center;gap:14px;padding:14px 16px}
 @media(min-width:900px){.cv-cont{min-width:380px}}
 .cv-cont-ico{width:48px;height:48px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.14);color:#7DD3FC}
 .cv-cont b{display:block;font-size:15px;font-weight:700;margin-top:2px}
 .cv-cont-num{margin-left:auto;font-family:var(--fd);font-size:36px;font-weight:700;color:#7DD3FC;line-height:1}
-.cv-ov{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:14px}
+.cv-ov{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap)}
 @media(min-width:900px){.cv-ov{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .cv-aneis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
 .cv-anel-box{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
@@ -1788,10 +1784,11 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 @media(min-width:768px){.cv-anel-c b{font-size:36px}}
 .cv-anel-c small{font-size:11px;font-weight:600;color:var(--mut);margin-top:4px}
 .cv-anel-leg{font-size:12.5px;color:var(--sua);font-weight:600;line-height:1.3}
-.cv-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cv-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
 .cv-kpis.q4{grid-template-columns:repeat(2,minmax(0,1fr))}
 .cv-kpis.q3>:last-child{grid-column:1/-1}
-@media(min-width:900px){.cv-kpis{gap:12px}.cv-kpis.q4{grid-template-columns:repeat(4,minmax(0,1fr))}.cv-kpis.q3{grid-template-columns:repeat(3,minmax(0,1fr))}.cv-kpis.q3>:last-child{grid-column:auto}}
+.cv-junto{margin-top:var(--gap)}
+@media(min-width:900px){.cv-kpis.q4{grid-template-columns:repeat(4,minmax(0,1fr))}.cv-kpis.q3{grid-template-columns:repeat(3,minmax(0,1fr))}.cv-kpis.q3>:last-child{grid-column:auto}}
 .cv-kpi{padding:14px;display:flex;flex-direction:column;gap:7px;border-radius:18px;min-width:0}
 .cv-kpi-h{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .cv-kpi .cv-num{font-size:30px}
@@ -1799,7 +1796,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-kpi-p{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:var(--sua);font-weight:600;min-height:20px}
 .cv-kpi.ativo{border-color:#3B82F6;box-shadow:0 0 0 1px #3B82F6 inset}
 .cv-c-ciano{color:#7DD3FC}.cv-c-azul{color:#93C5FD}.cv-c-ambar{color:#FCD34D}.cv-c-verde{color:#4ADE80}.cv-c-rosa{color:#F9A8D4}
-.cv-sec{display:flex;flex-direction:column;gap:7px;margin:4px 0 2px}
+.cv-sec{display:flex;flex-direction:column;gap:8px;margin:8px 0 0}
 .cv-sec-t{font-family:var(--fd);font-size:23px;font-weight:700;letter-spacing:-.2px}
 @media(min-width:768px){.cv-sec-t{font-size:27px}}
 .cv-sec-s{font-size:13px;color:var(--mut);line-height:1.45}
@@ -1809,6 +1806,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-chip.al{background:rgba(251,191,36,.14);color:#FCD34D;border-color:rgba(251,191,36,.3)}
 .cv-chip.az{background:rgba(59,130,246,.16);color:#BFDBFE;border-color:rgba(59,130,246,.32)}
 .cv-chip.vm{background:rgba(248,113,113,.14);color:#FCA5A5;border-color:rgba(248,113,113,.32)}
+.cv-chip.rs{background:rgba(236,72,153,.16);color:#F9A8D4;border-color:rgba(236,72,153,.34)}
 .cv-chip.sm{font-size:10.5px;padding:2px 8px}
 .cv-bar{display:block;height:8px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden;width:100%}
 .cv-bar.fina{height:6px}
@@ -1816,7 +1814,9 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-bar>i.ok{background:linear-gradient(90deg,#16A34A,#4ADE80)}
 .cv-bar>i.al{background:linear-gradient(90deg,#F59E0B,#FCD34D)}
 .cv-bar>i.ou{background:linear-gradient(90deg,#F59E0B,#FDE68A)}
-.cv-lista{display:flex;flex-direction:column;gap:10px}
+.cv-bar>i.masc{background:linear-gradient(90deg,#2563EB,#60A5FA)}
+.cv-bar>i.fem{background:linear-gradient(90deg,#DB2777,#F472B6)}
+.cv-lista{display:flex;flex-direction:column;gap:var(--gap-lista)}
 details.cv-lid,details.cv-bai{background:var(--painel);border:1px solid var(--borda);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);overflow:hidden}
 details.cv-lid[open],details.cv-bai[open]{border-color:#3B82F6}
 .cv-lid>summary,.cv-mul>summary,.cv-bai>summary{list-style:none;cursor:pointer;display:block;outline:none;-webkit-tap-highlight-color:transparent}
@@ -1865,14 +1865,15 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-cobrar:hover{background:#15803D}
 .cv-cobrar.off{background:rgba(148,163,184,.14);color:var(--mut) !important;font-size:11.5px;padding:0 10px}
 .cv-cobrar.off::before{display:none}
-.cv-busca-r{display:flex;flex-direction:column;gap:8px;margin:4px 0 16px}
-.st-key-barra_topo{margin-top:10px}
-.st-key-barra_topo [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;gap:8px !important;justify-content:flex-end}
-.st-key-barra_topo [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important;min-width:0 !important}
+.cv-busca-r{display:flex;flex-direction:column;gap:8px}
+.st-key-barra_topo [data-testid="stHorizontalBlock"]{flex-direction:row !important;flex-wrap:nowrap !important;gap:8px !important;align-items:center}
+.st-key-barra_topo [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important;min-width:0 !important}
+.st-key-barra_topo [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:first-child{flex:1 1 auto !important;padding-right:8px}
 .st-key-barra_topo .stButton>button{min-height:44px;padding:0 18px}
 .st-key-barra_topo .stButton,.st-key-barra_topo [data-testid="stButton"]{width:100% !important}
 .cv-marca b{white-space:nowrap}
-@media(max-width:640px){.st-key-barra_topo [data-testid="stColumn"]{flex:1 1 0 !important}}
+@media(max-width:640px){.st-key-barra_topo [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;row-gap:12px !important}.st-key-barra_topo [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:first-child{flex:1 1 100% !important;padding-right:0}.st-key-barra_topo [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:not(:first-child){flex:1 1 0 !important}.st-key-barra_topo [data-testid="stColumn"] [data-testid="stElementContainer"],.st-key-barra_topo [data-testid="stTooltipHoverTarget"],.st-key-barra_topo button{width:100% !important}}
+@media(max-width:480px){.cv-cont{gap:12px;padding:14px}.cv-cont-ico{display:none}.cv-cont-num{font-size:30px}.cv-tool{min-height:64px;padding:12px}.cv-tool-txt small{display:none}.cv-tool-ico{width:40px;height:40px}}
 .cv-mais{display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:12px;border:1px dashed rgba(125,170,255,.35);color:var(--sua);font-size:12.5px;font-weight:700}
 .cv-top-l{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .cv-top{display:flex;align-items:center;gap:12px;min-width:0}
@@ -1897,9 +1898,11 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-rk-v{grid-area:v;font-family:var(--fd);font-weight:700;font-size:16px;text-align:right}
 .cv-rk>.cv-bar{grid-area:b}
 @media(min-width:1000px){.cv-rk{grid-template-columns:28px minmax(130px,230px) minmax(0,1fr) 54px;grid-template-areas:"p n b v"}}
-.cv-grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
-@media(min-width:760px){.cv-grid2{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1150px){.cv-grid2.tres{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.cv-grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap);align-items:start}
+.cv-grid2.igual{align-items:stretch}
+.cv-grid2.igual .cv-vei-pe{margin-top:auto}
+@media(min-width:768px){.cv-grid2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1200px){.cv-grid2.tres{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .cv-bai>summary{padding:14px}
 .cv-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .cv-mini>span{padding:8px 10px;border-radius:12px;background:var(--painel2);border:1px solid rgba(125,170,255,.1);display:flex;flex-direction:column;gap:2px}
@@ -1921,7 +1924,7 @@ details.cv-mul[open]{border-color:#2F6FE0}
 .cv-pir-l,.cv-pir-d{display:flex;align-items:center;gap:6px;min-width:0}
 .cv-pir-l{justify-content:flex-end}
 .cv-pir-l i,.cv-pir-d i{display:block;height:18px;border-radius:6px;min-width:2px}
-.cv-pir-l i{background:#3B82F6}.cv-pir-d i{background:#67E8F9}
+.cv-pir-l i{background:#3B82F6}.cv-pir-d i{background:#EC4899}
 .cv-pir-l b,.cv-pir-d b{font-size:12px;font-weight:700;color:var(--sua);min-width:22px}
 .cv-pir-l b{text-align:right}
 .cv-pir-f{text-align:center;font-size:12px;font-weight:800}
@@ -2096,37 +2099,6 @@ def marca(agora_txt: str, modo: str) -> str:
 </div></div>"""
 
 
-def faixa_vitrine() -> str:
-    """Explica a quem visita a demonstração o que é o painel e quem fez."""
-    contato = ""
-    if url_segura(C.CONTATO_URL):
-        contato = (f'<a class="cv-vit-btn" href="{url_segura(C.CONTATO_URL)}" target="_blank" rel="noopener noreferrer">'
-                   f'{esc(C.CONTATO_ROTULO)}{ic("link", "p")}</a>')
-    return (f'<div class="cv"><div class="cv-vit"><span class="cv-vit-ico">{ic("info", "g")}</span>'
-            f'<span class="cv-vit-txt"><b>Painel de demonstração · dados fictícios</b>'
-            f'<small>Centro de comando para organizar a base de apoiadores de uma campanha. '
-            f'Desenvolvido por <b>{esc(C.AUTOR)}</b> · {esc(C.AUTOR_DESCRICAO)}</small></span>{contato}</div></div>')
-
-
-GUIA_ABAS = [
-    ("Lideranças", "Ranking de líderes e multiplicadores. Toque num nome para abrir a equipe e as pessoas cadastradas."),
-    ("Histórico", "Cadastros por semana, total acumulado contra a meta e quem está em ritmo agora."),
-    ("Bairros", "Quantos apoiadores há em cada bairro e quais ainda não têm ninguém."),
-    ("Perfil", "Gênero, faixa etária, aniversariantes da semana e qualidade dos dados."),
-    ("Veículos", "Quem tem carro para ajudar no transporte do dia da eleição."),
-    ("Apoio Extra", "Quem topou adesivo no carro, bandeira ou trabalhar no dia da eleição."),
-    ("Duplicatas", "Cadastros repetidos para limpar a planilha."),
-    ("Relatórios", "Planilhas em Excel e PDF prontas para baixar e compartilhar."),
-]
-
-
-def guia_rapido() -> str:
-    itens = "".join(f'<li><b>{esc(a)}</b> · {esc(t)}</li>' for a, t in GUIA_ABAS)
-    return (f'<div class="cv"><ul class="cv-guia">{itens}</ul>'
-            f'<div class="cv-sec-s">Dica: a busca acima das abas encontra qualquer apoiador pelo nome, bairro, '
-            f'multiplicador, líder ou telefone.</div></div>')
-
-
 def ferramentas() -> str:
     """Atalhos para as outras ferramentas: grandes, coloridos e com aviso de que abrem em nova aba."""
     cards = "".join(
@@ -2146,7 +2118,7 @@ def cabecalho(contagem: dict, avisos: list) -> str:
     return f"""<div class="cv">
 {faixa}
 <div class="cv-hero">
-<div><div class="cv-h1" role="heading" aria-level="1">Painel de Operações</div><div class="cv-lead">Base de apoiadores atualizada em tempo real</div></div>
+<div class="cv-h1" role="heading" aria-level="1">Painel de Operações</div>
 <div class="cv-card cv-cont"><span class="cv-cont-ico">{ic(contagem.get("icone", "relogio"), "g")}</span>
 <span><span class="cv-over">{esc(contagem["rotulo"])}</span><b>{esc(contagem["texto"])}</b></span>
 <span class="cv-cont-num">{esc(contagem["numero"])}</span></div>
@@ -2400,12 +2372,13 @@ def cards_bairros(resumo: pd.DataFrame, pessoas_por_bairro: dict, abrir: bool, p
 def cards_genero(perf: dict) -> str:
     m, f, n = perf["sexos"]["Masculino"], perf["sexos"]["Feminino"], perf["sexos"][NAO_INFORMADO]
 
-    def card(rotulo, d, cor, icone):
+    # Cores fixas por gênero em toda a aba: masculino = azul, feminino = rosa.
+    def card(rotulo, d, cor, icone, tipo_chip, tipo_barra):
         media = f"{fmt_dec(d['media'])} anos" if d["media"] is not None else "—"
         return (f'<div class="cv-card cv-gen"><div class="cv-kpi-h"><span class="cv-over">{rotulo}</span><span style="color:{cor}">{ic(icone, "g")}</span></div>'
                 f'<span class="cv-num">{fmt_int(d["n"])}</span>'
-                f'<span class="cv-chips">{chip(fmt_dec(d["pct"]) + "% da base", "az")}{chip("Idade média " + media)}</span>'
-                f'{barra(d["pct"])}</div>')
+                f'<span class="cv-chips">{chip(fmt_dec(d["pct"]) + "% da base", tipo_chip)}{chip("Idade média " + media)}</span>'
+                f'{barra(d["pct"], tipo_barra)}</div>')
 
     geral = perf["media_geral"]
     geral_card = (f'<div class="cv-card cv-gen"><div class="cv-kpi-h"><span class="cv-over">Idade média geral</span>'
@@ -2414,14 +2387,14 @@ def cards_genero(perf: dict) -> str:
                   f'<span class="cv-chips">{chip("Mediana " + fmt_dec(perf["mediana"], 0) + " anos")}'
                   f'{chip(str(perf["sem_idade"]) + " sem data de nascimento", "al" if perf["sem_idade"] else "")}</span></div>')
     total = perf["total"] or 1
-    split = (f'<div class="cv-split"><i style="width:{m["n"] / total * 100:.1f}%;background:#3B82F6"></i>'
-             f'<i style="width:{f["n"] / total * 100:.1f}%;background:#67E8F9"></i></div>')
-    leg = (f'<div class="cv-leg" style="margin-top:8px"><span><i style="background:#3B82F6"></i>Masculino {fmt_dec(m["pct"])}%</span>'
-           f'<span><i style="background:#67E8F9"></i>Feminino {fmt_dec(f["pct"])}%</span>'
+    split = (f'<div class="cv-split"><i style="width:{m["n"] / total * 100:.1f}%;background:{COR_MASC}"></i>'
+             f'<i style="width:{f["n"] / total * 100:.1f}%;background:{COR_FEM}"></i></div>')
+    leg = (f'<div class="cv-leg" style="margin-top:8px"><span><i style="background:{COR_MASC}"></i>Masculino {fmt_dec(m["pct"])}%</span>'
+           f'<span><i style="background:{COR_FEM}"></i>Feminino {fmt_dec(f["pct"])}%</span>'
            f'{"<span><i style=background:rgba(148,163,184,.4)></i>Não informado " + fmt_dec(n["pct"]) + "%</span>" if n["n"] else ""}</div>')
-    return (f'<div class="cv"><div class="cv-kpis" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">'
-            f'{card("Masculino", m, "#93C5FD", "pessoa")}{card("Feminino", f, "#67E8F9", "pessoa")}{geral_card}</div>'
-            f'<div class="cv-card cv-pad" style="margin-top:12px"><div class="cv-over">Proporção da base</div>{split}{leg}</div></div>')
+    return (f'<div class="cv"><div class="cv-kpis q3">'
+            f'{card("Masculino", m, "#93C5FD", "pessoa", "az", "masc")}{card("Feminino", f, "#F9A8D4", "pessoa", "rs", "fem")}{geral_card}</div>'
+            f'<div class="cv-card cv-pad cv-junto"><div class="cv-over">Proporção da base</div>{split}{leg}</div></div>')
 
 
 def card_piramide(perf: dict) -> str:
@@ -2432,7 +2405,7 @@ def card_piramide(perf: dict) -> str:
         f'<span class="cv-pir-d"><i style="width:{r["f"] / mx * 100:.0f}%"></i><b>{r["f"]}</b></span></div>'
         for r in reversed(perf["piramide"]))
     return (f'<div class="cv"><div class="cv-card cv-pad"><div class="cv-cab"><span class="cv-titulo">Pirâmide etária</span>'
-            f'<span class="cv-leg"><span><i style="background:#3B82F6"></i>Masc.</span><span><i style="background:#67E8F9"></i>Fem.</span></span></div>'
+            f'<span class="cv-leg"><span><i style="background:{COR_MASC}"></i>Masc.</span><span><i style="background:{COR_FEM}"></i>Fem.</span></span></div>'
             f'<div class="cv-sec-s">Inclui 16–17 anos (voto facultativo).</div><div class="cv-pir">{linhas}</div></div></div>')
 
 
@@ -2495,7 +2468,7 @@ def grade(cards: list, tres: bool = True, limite: int | None = None, total: int 
     aviso = ""
     if limite and total and total > limite:
         aviso = f'<div class="cv-sec-s" style="margin-top:10px;text-align:center">Mostrando {limite} de {fmt_int(total)}. Use os filtros para achar alguém específico.</div>'
-    return f'<div class="cv"><div class="cv-grid2{" tres" if tres else ""}">{"".join(cards)}</div>{aviso}</div>'
+    return f'<div class="cv"><div class="cv-grid2 igual{" tres" if tres else ""}">{"".join(cards)}</div>{aviso}</div>'
 
 
 def card_apoio(p, tipo: str) -> str:
@@ -2604,6 +2577,12 @@ LIMITE_CARDS = 120
 def html(conteudo: str):
     """Mostra HTML numa linha só (evita que o Markdown do Streamlit quebre o layout)."""
     st.markdown("".join(l.strip() for l in conteudo.splitlines() if l.strip()), unsafe_allow_html=True)
+
+
+def colunas_2_1():
+    """Conteúdo principal + coluna lateral: 2:1 em telas largas, 3:2 em notebooks pequenos, empilhado no celular."""
+    with st.container(key="cols21"):
+        return st.columns([2, 1])
 
 
 def segredo(*caminho, padrao=None):
@@ -2803,11 +2782,10 @@ def contagem_regressiva(hoje, total: int = 0, semanal_todo: list | None = None) 
 def barra_topo(modo: str):
     """Marca, horário e as ações principais (atualizar e sair) sempre no alto."""
     agora = datetime.now(FUSO).strftime("%d/%m · %H:%M")
-    html(ui.marca(agora, modo))
-    if modo == "demo":
-        html(ui.faixa_vitrine())
     with st.container(key="barra_topo"):
-        c_atualizar, c_sair = st.columns(2)
+        c_marca, c_atualizar, c_sair = st.columns(3, vertical_alignment="center")
+        with c_marca:
+            html(ui.marca(agora, modo))
         with c_atualizar:
             if st.button("↻ Atualizar", key="atualizar", help="Busca agora os cadastros mais recentes da planilha"):
                 limpar_caches()
@@ -2862,8 +2840,7 @@ def aba_liderancas(d: dict):
     n_mult = sum(l["n_mult"] for l in lideres)
     na_meta = sum(l["na_meta"] for l in lideres)
     n_lideres = sum(1 for l in lideres if l["key"] != P.chave(P.SEM_LIDER))
-    html(ui.secao("Ranking de lideranças",
-                  "Toque no líder para abrir os multiplicadores. Toque no multiplicador para ver as pessoas cadastradas.",
+    html(ui.secao("Ranking de lideranças", "",
                   [ui.chip(f"{na_meta} de {n_mult} multiplicadores na meta", "ok", "check"),
                    ui.chip(f"Meta: {C.META_POR_MULTIPLICADOR} por multiplicador", "", "estrela"),
                    ui.chip(f"{n_lideres} lideranças", "az", "users")]))
@@ -2888,7 +2865,7 @@ def aba_liderancas(d: dict):
                      key=lambda m: (m["total"] > 0, -(m["dias_sem"] or 999), m["nome"]))
     top = sorted(todos_mults, key=lambda m: (-m["total"], m["nome"]))[:10]
 
-    col1, col2 = st.columns([1.75, 1], gap="large")
+    col1, col2 = colunas_2_1()
     with col1:
         if mostrar:
             html(ui.lista_lideres(mostrar, abrir_lid, abrir_mult, d["dup_linhas"]))
@@ -2899,7 +2876,6 @@ def aba_liderancas(d: dict):
     with col2:
         html(ui.card_parados(parados))
         html(ui.card_top(top))
-        html(ui.nota("O gráfico de cadastros por semana agora fica na aba <b>Histórico</b>.", "", "grafico"))
 
 
 def busca_geral(d: dict, limite: int = 30):
@@ -2968,7 +2944,7 @@ def aba_historico(d: dict):
                f"semana de {ui.esc(melhor['rotulo'])}" if melhor else "", "cv-c-ambar"),
         ui.kpi("Para a meta", meta_val, "estrela", meta_txt, "cv-c-verde"),
     ]))
-    col1, col2 = st.columns([1.75, 1], gap="large")
+    col1, col2 = colunas_2_1()
     with col1:
         janela = serie[-16:]  # mais que isso espreme as colunas no celular
         html(ui.card_semanal(janela, "Cadastros por semana"))
@@ -2995,7 +2971,7 @@ def aba_bairros(d: dict):
         ui.kpi("Sem cadastro", P.fmt_int(len(sem)), "alerta", "da lista oficial", "cv-c-ambar" if sem else "cv-c-verde"),
         ui.kpi("Média por bairro", P.fmt_dec(media), "grafico", "cadastros", "cv-c-azul"),
     ]))
-    col1, col2 = st.columns([1.5, 1], gap="large")
+    col1, col2 = colunas_2_1()
     with col1:
         itens = [(r.bairro, r.total, f"{r.lideres} líd. · {r.veiculos} veíc.") for r in resumo.itertuples()]
         html(ui.ranking_card("Ranking de bairros", itens, "Do bairro com mais cadastros para o com menos.", limite=12))
@@ -3024,7 +3000,7 @@ def aba_perfil(d: dict):
     perf = d["perfil"]
     html(ui.secao("Perfil demográfico", "Gênero, idade e dados que ajudam a falar com cada público."))
     html(ui.cards_genero(perf))
-    col1, col2 = st.columns(2, gap="large")
+    col1, col2 = st.columns(2)
     with col1:
         html(ui.card_piramide(perf))
         itens = [(l["local"], l["total"], l["bairro"]) for l in d["locais"]]
@@ -3046,7 +3022,7 @@ def aba_veiculos(d: dict):
     if v["total"] == 0:
         html(ui.vazio("Nenhum veículo cadastrado ainda."))
         return
-    col1, col2 = st.columns(2, gap="large")
+    col1, col2 = st.columns(2)
     with col1:
         itens = [(r.bairro, r.total, "") for r in v["por_bairro"].itertuples()]
         html(ui.ranking_card("Veículos por bairro", itens, "Do maior para o menor.", limite=10))
@@ -3094,7 +3070,7 @@ def aba_apoio(d: dict):
     if sub.empty:
         html(ui.vazio(f"Ninguém marcou '{escolha}' ainda."))
         return
-    col1, col2 = st.columns(2, gap="large")
+    col1, col2 = st.columns(2)
     with col1:
         itens = [(b, n, "") for b, n in sub.BAIRRO.value_counts().items()]
         html(ui.ranking_card(f"{escolha} por bairro", itens, limite=8))
@@ -3157,7 +3133,7 @@ def aba_relatorios(d: dict, parametros: tuple):
     html(ui.secao("Relatórios", "Arquivos prontos para imprimir, mandar no grupo ou trabalhar no Excel."))
     hoje = d["base"]["hoje"].strftime("%Y-%m-%d")
     xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    col1, col2, col3 = st.columns(3, gap="medium")
+    col1, col2, col3 = st.columns(3)
     with col1:
         html(ui.card_relatorio(
             "Cadastros por liderança", "Do líder com mais cadastros para o com menos, com todos os multiplicadores e pessoas.",
@@ -3224,8 +3200,6 @@ def main():
         visivel = st.checkbox(rotulo_sensivel, key="sensivel", value=False, help=ajuda_sensivel)
     ui.SENSIVEL = bool(visivel)
     html(ui.selo_sigilo(ui.SENSIVEL))
-    with st.expander("Como usar este painel · guia rápido", expanded=(modo == "demo")):
-        html(ui.guia_rapido())
     busca_geral(d)
 
     contadores = {"Duplicatas": len(d["duplicatas"]), "Veículos": d["veiculos"]["total"]}
