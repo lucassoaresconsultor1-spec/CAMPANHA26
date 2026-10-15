@@ -2,7 +2,7 @@
 
 Para atualizar o painel, basta trocar este arquivo no GitHub.
 Modo demonstração: funciona sem configurar nada (senha demo2026).
-Modo planilha: configure o Secrets do Streamlit (veja o LEIA-ME).
+Modo planilha: configure o Secrets do Streamlit (veja o README).
 """
 from __future__ import annotations
 
@@ -29,7 +29,14 @@ C = P = R = S = ui = _Modulo()
 from datetime import date
 
 # ---- Regras da campanha -------------------------------------------------
-VERSAO = "1.3"
+VERSAO = "1.4"
+
+# ---- Vitrine (aparece só no MODO DEMONSTRAÇÃO) ----------------------------
+AUTOR = "Lucas Soares"
+AUTOR_DESCRICAO = "Análise e Desenvolvimento de Sistemas · ferramentas para organizar campanhas"
+CONTATO_URL = ""                      # ex.: link do WhatsApp, LinkedIn ou e-mail (vazio = sem botão)
+CONTATO_ROTULO = "Fale comigo"
+
 META_POR_MULTIPLICADOR = 15          # meta de cadastros de cada multiplicador
 DATA_ELEICAO = date(2026, 10, 4)      # usada na contagem regressiva
 DIAS_PARADO = 7                       # sem cadastro há X dias = "parado"
@@ -1300,6 +1307,21 @@ def _nasc(n) -> str:
         return ""
 
 
+def _cpf_fmt(d) -> str:
+    d = str(d or "")
+    return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:]}" if len(d) == 11 else d
+
+
+def _titulo_fmt(d) -> str:
+    d = str(d or "")
+    return f"{d[:4]} {d[4:8]} {d[8:]}" if len(d) == 12 else d
+
+
+def _sensiveis(df: pd.DataFrame) -> dict:
+    """Colunas de dados sensíveis (só entram nos arquivos com o modo VISÍVEL ligado)."""
+    return {"CPF": df["CPF"].map(_cpf_fmt), "Título": df["TITULO"].map(_titulo_fmt), "Nascimento": df["NASC"].map(_nasc)}
+
+
 # ---------------------------------------------------------------------------
 # Excel
 # ---------------------------------------------------------------------------
@@ -1350,7 +1372,7 @@ def _linhas_pessoas(lideres: list, sensivel: bool = False) -> pd.DataFrame:
                     "Data do cadastro": _data_fmt(p.DATA), "Linha na planilha": p.LINHA,
                 }
                 if sensivel:
-                    linha.update({"CPF": p.CPF, "Título": p.TITULO, "Nascimento": _nasc(p.NASC)})
+                    linha.update({"CPF": _cpf_fmt(p.CPF), "Título": _titulo_fmt(p.TITULO), "Nascimento": _nasc(p.NASC)})
                 linhas.append(linha)
     colunas = ["Pos. líder", "Líder", "Pos. multiplicador", "Multiplicador", "Nome", "WhatsApp", "Bairro", "Seção",
                "Local de votação", "Data do cadastro", "Linha na planilha"]
@@ -1388,12 +1410,15 @@ def excel_liderancas(lideres: list, sensivel: bool = False) -> bytes:
 def _df_veiculos(v: pd.DataFrame, ordem_bairros: list, sensivel: bool = False) -> pd.DataFrame:
     pos = {b: i for i, b in enumerate(ordem_bairros)}
     v = v.assign(_o=v["BAIRRO"].map(pos)).sort_values(["_o", "NOME"])
-    return pd.DataFrame({
+    colunas = {
         "Bairro": v["BAIRRO"], "Motorista": v["NOME"], "Modelo": v["MODELO"], "Cor": v["COR"],
         "Placa": v["PLACA"], "WhatsApp": v["TEL_FMT"].map(lambda t: _tel(t, sensivel)), "Líder": v["LIDER"], "Multiplicador": v["MULT"],
         "Dia da eleição": v["DIA_E"].map(_sim), "Adesivo": v["ADESIVO"].map(_sim),
         "Seção": v["SECAO"], "Linha na planilha": v["LINHA"],
-    })
+    }
+    if sensivel:
+        colunas.update(_sensiveis(v))
+    return pd.DataFrame(colunas)
 
 
 def excel_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame, sensivel: bool = False) -> bytes:
@@ -1411,11 +1436,14 @@ def excel_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame, sensivel: bool = F
 def excel_apoios(cad: pd.DataFrame, sensivel: bool = False) -> bytes:
     def tabela(df):
         df = df.sort_values(["BAIRRO", "NOME"])
-        return pd.DataFrame({
+        colunas = {
             "Nome": df["NOME"], "WhatsApp": df["TEL_FMT"].map(lambda t: _tel(t, sensivel)), "Bairro": df["BAIRRO"], "Líder": df["LIDER"],
             "Multiplicador": df["MULT"], "Veículo": (df["MODELO"] + " " + df["COR"]).str.strip(),
             "Placa": df["PLACA"], "Seção": df["SECAO"],
-        })
+        }
+        if sensivel:
+            colunas.update(_sensiveis(df))
+        return pd.DataFrame(colunas)
     buf = BytesIO()
     with _escritor(buf) as w:
         _planilha(w, tabela(cad[cad.ADESIVO]), "Adesivo veicular")
@@ -1478,7 +1506,8 @@ def _doc(buf, titulo, paisagem=False):
 
 def pdf_liderancas(lideres: list, sensivel: bool = False) -> bytes:
     buf = BytesIO()
-    doc, rodape, gerado = _doc(buf, "Cadastros por liderança")
+    # Com dados sensíveis a tabela ganha CPF, título e nascimento: a folha deitada dá espaço.
+    doc, rodape, gerado = _doc(buf, "Cadastros por liderança", paisagem=sensivel)
     largura = doc.width
     total = sum(lid["total"] for lid in lideres)
     meta = sum(lid["meta"] for lid in lideres)
@@ -1506,11 +1535,20 @@ def pdf_liderancas(lideres: list, sensivel: bool = False) -> bytes:
             if m["total"] == 0:
                 hist.append(KeepTogether([cab, Paragraph("Nenhum cadastro.", _ST_SUB)]))
                 continue
-            linhas = [[i, p.NOME, _tel(p.TEL_FMT, sensivel), p.BAIRRO, p.SECAO,
-                       pd.Timestamp(p.DATA).strftime("%d/%m/%y") if pd.notna(p.DATA) else ""]
-                      for i, p in enumerate(m["pessoas"].itertuples(), start=1)]
-            t = _tabela(["#", "Nome", "WhatsApp", "Bairro", "Seção", "Cadastro"], linhas,
-                        [9 * mm, largura - 108 * mm, 30 * mm, 36 * mm, 13 * mm, 20 * mm])
+            linhas, cab_t, larg = [], ["#", "Nome", "WhatsApp"], [9 * mm, None, 30 * mm]
+            if sensivel:
+                cab_t += ["CPF", "Título", "Nascimento"]
+                larg += [28 * mm, 28 * mm, 20 * mm]
+            cab_t += ["Bairro", "Seção", "Cadastro"]
+            larg += [36 * mm, 13 * mm, 20 * mm]
+            larg[1] = largura - sum(x for x in larg if x)
+            for i, p in enumerate(m["pessoas"].itertuples(), start=1):
+                linha = [i, p.NOME, _tel(p.TEL_FMT, sensivel)]
+                if sensivel:
+                    linha += [_cpf_fmt(p.CPF), _titulo_fmt(p.TITULO), _nasc(p.NASC)]
+                linha += [p.BAIRRO, p.SECAO, pd.Timestamp(p.DATA).strftime("%d/%m/%y") if pd.notna(p.DATA) else ""]
+                linhas.append(linha)
+            t = _tabela(cab_t, linhas, larg)
             hist.append(KeepTogether([cab, t]) if len(linhas) <= 12 else cab)
             if len(linhas) > 12:
                 hist.append(t)
@@ -1535,11 +1573,21 @@ def pdf_veiculos(v: pd.DataFrame, por_bairro: pd.DataFrame, sensivel: bool = Fal
     for i, r in enumerate(por_bairro.itertuples(), start=1):
         sub = v[v.BAIRRO.eq(r.bairro)].sort_values("NOME")
         cab = Paragraph(escape(f"{i}º · {r.bairro} — {r.total} veículo(s)"), _ST_H1)
-        linhas = [[p.NOME, p.MODELO, p.COR, p.PLACA, _tel(p.TEL_FMT, sensivel), p.LIDER, p.MULT, _sim(p.DIA_E), _sim(p.ADESIVO)]
-                  for p in sub.itertuples()]
-        t = _tabela(["Motorista", "Modelo", "Cor", "Placa", "WhatsApp", "Líder", "Multiplicador", "Dia E",
-                     "Adesivo"], linhas,
-                    [largura - 222 * mm, 28 * mm, 20 * mm, 22 * mm, 30 * mm, 34 * mm, 40 * mm, 14 * mm, 16 * mm])
+        cab_t = ["Motorista", "Modelo", "Cor", "Placa", "WhatsApp"]
+        if sensivel:
+            cab_t += ["CPF", "Título", "Nascimento"]
+            larg = [None, 24 * mm, 16 * mm, 20 * mm, 28 * mm, 26 * mm, 26 * mm, 20 * mm, 26 * mm, 30 * mm, 11 * mm, 14 * mm]
+        else:
+            larg = [None, 28 * mm, 20 * mm, 22 * mm, 30 * mm, 34 * mm, 40 * mm, 14 * mm, 16 * mm]
+        cab_t += ["Líder", "Multiplicador", "Dia E", "Adesivo"]
+        larg[0] = largura - sum(x for x in larg if x)
+        linhas = []
+        for p in sub.itertuples():
+            linha = [p.NOME, p.MODELO, p.COR, p.PLACA, _tel(p.TEL_FMT, sensivel)]
+            if sensivel:
+                linha += [_cpf_fmt(p.CPF), _titulo_fmt(p.TITULO), _nasc(p.NASC)]
+            linhas.append(linha + [p.LIDER, p.MULT, _sim(p.DIA_E), _sim(p.ADESIVO)])
+        t = _tabela(cab_t, linhas, larg)
         hist.append(Spacer(1, 6))
         hist.append(KeepTogether([cab, t]) if len(linhas) <= 14 else cab)
         if len(linhas) > 14:
@@ -1666,6 +1714,16 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p{col
 .cv-link small{font-size:10.5px;color:var(--mut);font-weight:600}
 .cv-link-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.16);color:#7DD3FC}
 @media(min-width:768px){.cv-link{flex-direction:row;align-items:center;gap:12px;padding:14px 16px}.cv-link b{font-size:14px}}
+.cv-vit{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,.14),rgba(13,32,74,.62) 70%);border:1px solid rgba(251,191,36,.35)}
+.cv-vit-ico{width:40px;height:40px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(251,191,36,.16);color:#FCD34D}
+.cv-vit-txt{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cv-vit-txt>b{font-size:14px;color:#FCD34D}
+.cv-vit-txt small{font-size:12.5px;color:var(--sua);line-height:1.4}
+.cv-vit-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:#FCD34D;color:#04112B !important;font-weight:800;font-size:13px;margin-left:auto}
+.cv-guia{list-style:none;margin:4px 0 10px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+@media(min-width:768px){.cv-guia{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cv-guia li{font-size:13px;color:var(--sua);line-height:1.4;padding:10px 12px;border-radius:12px;background:var(--painel2);border:1px solid var(--borda)}
+.cv-guia li b{color:var(--txt)}
 .cv-tools-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;margin:18px 0 8px}
 .cv-tools-h .cv-over{display:inline-flex;align-items:center;gap:6px;color:var(--sua)}
 .cv-tools-n{font-size:11.5px;color:var(--mut);font-weight:600}
@@ -2016,12 +2074,14 @@ def login_card(modo: str, aviso: str | None = None, erro_config: bool = False) -
     if erro_config:
         corpo = ('<div class="cv-nota al" style="text-align:left;margin-top:14px">' + ic("alerta") +
                  '<div>Falta configurar a senha do painel (<b>senha_hash</b> em [auth] no secrets). '
-                 'Sem ela o acesso fica bloqueado. Veja o LEIA-ME.</div></div>')
+                 'Sem ela o acesso fica bloqueado. Veja o README.</div></div>')
     else:
         corpo = '<div class="cv-sec-s" style="margin-top:6px">Digite a senha do coordenador para entrar.</div>'
         if modo == "demo":
             corpo += ('<div class="cv-faixa" style="justify-content:center">' + ic("info") +
-                      'Modo demonstração · senha: <b>demo2026</b></div>')
+                      f'Demonstração com dados fictícios · senha <b>{esc(C.SENHA_DEMO)}</b></div>'
+                      f'<div class="cv-sec-s" style="margin-top:10px">Projeto de <b>{esc(C.AUTOR)}</b> · '
+                      f'{esc(C.AUTOR_DESCRICAO)}</div>')
     if aviso:
         corpo += f'<div class="cv-faixa" style="justify-content:center">{ic("relogio")}{esc(aviso)}</div>'
     return (f'<div class="cv"><div class="cv-card cv-login"><div class="cv-login-ico">{ic("escudo", "gg")}</div>'
@@ -2034,6 +2094,37 @@ def marca(agora_txt: str, modo: str) -> str:
 <div class="cv-marca"><span class="cv-logo">{ic("escudo", "g")}</span><span><b>Campanha 2026</b><small>Centro de Comando</small></span></div>
 <div style="display:flex;align-items:center;gap:6px">{'<span class="cv-demo">DEMO</span>' if modo == "demo" else ""}<div class="cv-status"><span class="cv-dot"></span>{esc(agora_txt)}</div></div>
 </div></div>"""
+
+
+def faixa_vitrine() -> str:
+    """Explica a quem visita a demonstração o que é o painel e quem fez."""
+    contato = ""
+    if url_segura(C.CONTATO_URL):
+        contato = (f'<a class="cv-vit-btn" href="{url_segura(C.CONTATO_URL)}" target="_blank" rel="noopener noreferrer">'
+                   f'{esc(C.CONTATO_ROTULO)}{ic("link", "p")}</a>')
+    return (f'<div class="cv"><div class="cv-vit"><span class="cv-vit-ico">{ic("info", "g")}</span>'
+            f'<span class="cv-vit-txt"><b>Painel de demonstração · dados fictícios</b>'
+            f'<small>Centro de comando para organizar a base de apoiadores de uma campanha. '
+            f'Desenvolvido por <b>{esc(C.AUTOR)}</b> · {esc(C.AUTOR_DESCRICAO)}</small></span>{contato}</div></div>')
+
+
+GUIA_ABAS = [
+    ("Lideranças", "Ranking de líderes e multiplicadores. Toque num nome para abrir a equipe e as pessoas cadastradas."),
+    ("Histórico", "Cadastros por semana, total acumulado contra a meta e quem está em ritmo agora."),
+    ("Bairros", "Quantos apoiadores há em cada bairro e quais ainda não têm ninguém."),
+    ("Perfil", "Gênero, faixa etária, aniversariantes da semana e qualidade dos dados."),
+    ("Veículos", "Quem tem carro para ajudar no transporte do dia da eleição."),
+    ("Apoio Extra", "Quem topou adesivo no carro, bandeira ou trabalhar no dia da eleição."),
+    ("Duplicatas", "Cadastros repetidos para limpar a planilha."),
+    ("Relatórios", "Planilhas em Excel e PDF prontas para baixar e compartilhar."),
+]
+
+
+def guia_rapido() -> str:
+    itens = "".join(f'<li><b>{esc(a)}</b> · {esc(t)}</li>' for a, t in GUIA_ABAS)
+    return (f'<div class="cv"><ul class="cv-guia">{itens}</ul>'
+            f'<div class="cv-sec-s">Dica: a busca acima das abas encontra qualquer apoiador pelo nome, bairro, '
+            f'multiplicador, líder ou telefone.</div></div>')
 
 
 def ferramentas() -> str:
@@ -2665,7 +2756,7 @@ def parametros_dados(modo: str) -> tuple:
     planilha_id = str(segredo("planilha", "id", padrao="") or "").strip()
     if not cred or not planilha_id:
         html(ui.nota("O modo <b>planilha</b> está ligado, mas faltam o <b>id</b> da planilha ou a credencial "
-                     "<b>gcp_service_account</b> no secrets. Veja o passo a passo no LEIA-ME.", "al", "alerta"))
+                     "<b>gcp_service_account</b> no secrets. Veja o passo a passo no README.", "al", "alerta"))
         st.stop()
     return (modo, hoje_iso, planilha_id, json.dumps(abas, sort_keys=True), json.dumps(dict(cred), sort_keys=True))
 
@@ -2713,6 +2804,8 @@ def barra_topo(modo: str):
     """Marca, horário e as ações principais (atualizar e sair) sempre no alto."""
     agora = datetime.now(FUSO).strftime("%d/%m · %H:%M")
     html(ui.marca(agora, modo))
+    if modo == "demo":
+        html(ui.faixa_vitrine())
     with st.container(key="barra_topo"):
         c_atualizar, c_sair = st.columns(2)
         with c_atualizar:
@@ -3091,13 +3184,14 @@ def aba_relatorios(d: dict, parametros: tuple):
             x = arquivo_apoios(parametros, ui.SENSIVEL)
         botao_download("Baixar Excel", x, f"apoio_extra_{hoje}.xlsx", xlsx, "dl_apo_x")
     if ui.SENSIVEL:
-        html(ui.nota("<b>Dados sensíveis VISÍVEIS:</b> os arquivos saem com CPF, título, nascimento e WhatsApp completos. "
-                     "Não repasse em grupos. Para gerar a versão protegida, volte o botão lá em cima para RESTRITO.",
-                     "al", "alerta"))
+        html(ui.nota("<b>Dados sensíveis VISÍVEIS:</b> todos os arquivos saem com CPF, título, nascimento e WhatsApp "
+                     "completos (o PDF de lideranças sai na horizontal para caber tudo). Não repasse em grupos. "
+                     "Para a versão protegida, desligue lá em cima o botão <b>Mostrar CPF, título, nascimento e "
+                     "telefone completos</b>.", "al", "alerta"))
     else:
-        html(ui.nota("<b>Modo RESTRITO:</b> os arquivos saem sem CPF, título e nascimento, e com o WhatsApp mascarado "
-                     "(ex.: (22) 9••••-3456). Para a versão completa, ligue o botão de dados sensíveis lá em cima.",
-                     "", "escudo"))
+        html(ui.nota("<b>Modo PROTEGIDO:</b> os arquivos saem sem CPF, título e nascimento, e com o WhatsApp mascarado "
+                     "(ex.: (22) 9••••-3456). Para a versão completa, ligue lá em cima o botão <b>Mostrar CPF, título, "
+                     "nascimento e telefone completos</b>.", "", "escudo"))
     html(ui.tabela_resumo(d["lideres"]))
 
 
@@ -3130,6 +3224,8 @@ def main():
         visivel = st.checkbox(rotulo_sensivel, key="sensivel", value=False, help=ajuda_sensivel)
     ui.SENSIVEL = bool(visivel)
     html(ui.selo_sigilo(ui.SENSIVEL))
+    with st.expander("Como usar este painel · guia rápido", expanded=(modo == "demo")):
+        html(ui.guia_rapido())
     busca_geral(d)
 
     contadores = {"Duplicatas": len(d["duplicatas"]), "Veículos": d["veiculos"]["total"]}
